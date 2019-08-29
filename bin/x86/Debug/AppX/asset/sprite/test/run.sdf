@@ -1,6 +1,0 @@
-﻿byte length 5
-str path asset\sprite\test\sprint\sprint
-str key playerrun
-bool timed true
-byte wait 12
-bool directional true

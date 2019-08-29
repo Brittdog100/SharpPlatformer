@@ -1,6 +1,0 @@
-﻿byte length 4
-str path asset\sprite\test\fall\fall
-str key playerfall
-bool timed true
-byte wait 30
-bool directional true

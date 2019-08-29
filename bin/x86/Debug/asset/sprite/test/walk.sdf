@@ -1,6 +1,0 @@
-﻿byte length 2
-str path asset\sprite\test\run\run
-str key playerwalk
-bool timed true
-byte wait 30
-bool directional true

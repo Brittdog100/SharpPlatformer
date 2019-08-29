@@ -1,6 +1,0 @@
-﻿byte length 2
-str path asset\sprite\test\idle\idle
-str key playeridle
-bool timed true
-byte wait 30
-bool directional true
