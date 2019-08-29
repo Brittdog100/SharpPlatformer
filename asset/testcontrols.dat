@@ -1,0 +1,5 @@
+﻿float gravity 1.25
+float forcejumpy 25
+float movement 1.25
+float friction 0.7625
+float forcejumpx 1.5

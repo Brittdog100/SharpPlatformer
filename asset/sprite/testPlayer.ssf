@@ -1,0 +1,5 @@
+﻿byte states 4
+sprite state0 00:playeridle
+sprite state1 00:playerwalk
+sprite state2 00:playerrun
+sprite state3 00:playerfall
