@@ -1,5 +1,5 @@
-bin\
-obj\
-Properties\
-Assets\
-*.appxmanifest
+bin/
+obj/
+Properties/
+Assets/
+Package.appxmanifest
