@@ -122,6 +122,7 @@
     <Compile Include="Control.cs" />
     <Compile Include="Data.cs" />
     <Compile Include="Entity.cs" />
+    <Compile Include="Error.cs" />
     <Compile Include="Event.cs" />
     <Compile Include="Level.cs" />
     <Compile Include="MainPage.xaml.cs">
@@ -223,6 +224,7 @@
   <ItemGroup>
     <EmbeddedResource Include="asset\testcontrols.dat" />
   </ItemGroup>
+  <ItemGroup />
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>

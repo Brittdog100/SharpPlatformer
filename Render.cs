@@ -21,6 +21,7 @@ namespace Platformer {
 		void canvas_CreateResources(ICanvasAnimatedControl sender,CanvasCreateResourcesEventArgs args) {
 			//Create all sprites.
 			args.TrackAsyncAction(Initialization.CreateSprites(sender).AsAsyncAction());
+			Initialization.CreateSheets();
 			//Create the player object, however that's decided.
 			Initialization.PreparePlayer();
 		}

@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Foundation;
 
+using Platformer.Error;
+
 using static System.Diagnostics.Debug;
 
 namespace Platformer {
@@ -21,11 +23,12 @@ using Data.Struct;
 
 		public static event Event.SpriteCreationEvent CreatingSprites;
 		private static bool _spritesmade = false;
-
+		public static event Event.CreationEvent CreatingSheets;
 		private static bool _sheetsmade = false;
 
 		static Initialization() {
 			CreatingSprites += CreateCoreSprites;
+			CreatingSheets += CreateCoreSpriteSheets;
 		}
 
 		public static async Task CreateSprites(ICanvasAnimatedControl sender) {
@@ -33,6 +36,12 @@ using Data.Struct;
 				return;
 			_spritesmade = true;
 			await CreatingSprites(sender);
+		}
+		public static void CreateSheets() {
+			if(_sheetsmade)
+				return;
+			_sheetsmade = true;
+			CreatingSheets();
 		}
 
 		private async static Task CreateCoreSprites(ICanvasAnimatedControl sender) {
@@ -43,9 +52,8 @@ using Data.Struct;
 			await ResourceManager.LoadSprite(sender, Database.MainPackage, @"asset\sprite\test\fall.sdf");
 			WriteLine("finished sprite prep");
 		}
-
 		private static void CreateCoreSpriteSheets() {
-			_sheetsmade = true;
+			
 		}
 
 		public static void PreparePlayer() {
@@ -64,12 +72,12 @@ using Data.Struct;
 		private static Package[] _pack = new Package[0x100];
 		private static Dictionary<string,Package> _package = new Dictionary<string, Package>();
 		public static readonly Package MainPackage = CreatePackage("core");
-		private static SpriteBundle[] sprites = new SpriteBundle[0x100];
+		private static Bundle<Render.Sprite>[] sprites = new Bundle<Render.Sprite>[0x100];
 		public static readonly Random rng = new Random();
 		public static Object.Player player;
 
 		static Database() {
-			sprites[0] = new SpriteBundle(MainPackage);
+			sprites[0] = new Bundle<Render.Sprite>(MainPackage);
 		}
 
 		public static Identifiable Get(IdentityNumber id) { WriteLine("get id " + id.ToString()); return map[id]; }
@@ -85,8 +93,12 @@ using Data.Struct;
 		internal static void RegisterPackage(Package p) { _package[p.Name] = p; }
 
 		internal static bool AddSprite(Package pack, string key, Render.Sprite sprite) { return sprites[pack.Identifier].Add(sprite, key); }
-		public static Render.Sprite GetSprite(Package pack, string key) { return sprites[pack.Identifier][key]; }
-		public static SpriteBundle GetSpriteBundle(Package pack) { return sprites[pack.Identifier]; }
+		public static Render.Sprite GetSprite(Package pack, string key) {
+			try {
+				return sprites[pack.Identifier][key];
+			} catch(Exception e) { throw new UnregisteredSpriteException(pack, key, e); }
+		}
+		public static Bundle<Render.Sprite> GetSpriteBundle(Package pack) { return sprites[pack.Identifier]; }
 
 	}
 
@@ -345,28 +357,28 @@ namespace Platformer.Data.Struct {
 
 	}
 
-	public struct SpriteBundle {
-		private Dictionary<string,Render.Sprite> _dict;
+	public struct Bundle<T> {
+		private Dictionary<string,T> _dict;
 		public readonly Package Source;
 
-		public SpriteBundle(Package src) {
+		public Bundle(Package src) {
 			Source = src;
-			_dict = new Dictionary<string,Render.Sprite>();
+			_dict = new Dictionary<string,T>();
 		}
 
-		public Render.Sprite this[string k] {
+		public T this[string k] {
 			get {
 				if(_dict.ContainsKey(k))
 					return _dict[k];
-				else return null;
+				else return default(T);
 			}
 			private set { _dict[k] = value; }
 		}
 
-		public bool Add(Render.Sprite s,string k) {
-			if(_dict.ContainsKey(k) || s == null)
+		public bool Add(T t,string k) {
+			if(_dict.ContainsKey(k) || t == null)
 				return false;
-			this[k] = s;
+			this[k] = t;
 			return true;
 		}
 
