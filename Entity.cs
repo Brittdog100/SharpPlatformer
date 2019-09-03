@@ -8,7 +8,7 @@ using Platformer.Render;
 
 namespace Platformer.Object {
 
-	public sealed class Player : Entity, Directional {
+	public sealed class Player : Entity, Directional, Identifiable {
 		private SpriteSheet sprites;
 		public Vector2 Velocity = new Vector2(0,0);
 		private bool _dir = false;

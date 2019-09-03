@@ -40,37 +40,37 @@ namespace Platformer.Input {
 		}
 
 		public static void Flow() {
-			float floorpos = MainPage.floor - (float)Database.player.Height;
-			bool grounded = Database.player.Y >= floorpos;
+			float floorpos = MainPage.floor - (float)Database.Player.Height;
+			bool grounded = Database.Player.Y >= floorpos;
 			if(grounded){
-				Database.player.Velocity.Y = 0;
-				Database.player.Velocity.X += HorizontalInput() * movemodifier;
-			} else if(Database.player.Y + Database.player.Velocity.Y > floorpos)
-				Database.player.Velocity.Y = floorpos - (float)Database.player.Y;
+				Database.Player.Velocity.Y = 0;
+				Database.Player.Velocity.X += HorizontalInput() * movemodifier;
+			} else if(Database.Player.Y + Database.Player.Velocity.Y > floorpos)
+				Database.Player.Velocity.Y = floorpos - (float)Database.Player.Y;
 			else
-				Database.player.Velocity.Y += gravity;
+				Database.Player.Velocity.Y += gravity;
 			if(JumpInput() && grounded){
-				Database.player.Velocity.Y -= jumpforce;//make 30?
+				Database.Player.Velocity.Y -= jumpforce;//make 30?
 				/*if(Key[VirtualKey.Shift])
 					Database.player.Velocity.Y *= 1.25f;*/
-				Database.player.Velocity.X += HorizontalInput() * jumparcmodifier;
+				Database.Player.Velocity.X += HorizontalInput() * jumparcmodifier;
 			}
-			Database.player.DoVelocity();
+			Database.Player.DoVelocity();
 			if(grounded) {
-				Database.player.Velocity.X *= friction;
+				Database.Player.Velocity.X *= friction;
 				if(HorizontalInput() != 0)
 					if(System.Math.Abs(HorizontalInput()) > 1)
-						Database.player.State = 2;
+						Database.Player.State = 2;
 					else
-						Database.player.State = 1;
+						Database.Player.State = 1;
 				else
-					Database.player.State = 0;
+					Database.Player.State = 0;
 			} else
-				Database.player.State = 3;
-			if(Database.player.Velocity.X > 0)
-				Database.player.Facing = false;
-			if(Database.player.Velocity.X < 0)
-				Database.player.Facing = true;
+				Database.Player.State = 3;
+			if(Database.Player.Velocity.X > 0)
+				Database.Player.Facing = false;
+			if(Database.Player.Velocity.X < 0)
+				Database.Player.Facing = true;
 		}
 
 

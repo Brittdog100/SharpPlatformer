@@ -58,7 +58,7 @@ using Data.Struct;
 
 		public static void PreparePlayer() {
 			//TODO
-			Database.player = new Object.Player(new Render.SpriteSheet(new Data.IO.DataMap(Database.MainPackage, new Data.IO.AppDataFile(@"asset\sprite\testplayer.ssf"))));
+			Database.Player = new Object.Player(new Render.SpriteSheet(new Data.IO.DataMap(Database.MainPackage, new Data.IO.AppDataFile(@"asset\sprite\testplayer.ssf"))));
 		}
 
 	}
@@ -70,27 +70,52 @@ using Data.Struct;
 		/// Package for all game objects created by the main game.
 		/// </summary>
 		private static Package[] _pack = new Package[0x100];
+		private static bool[] _registered = new bool[0x100];
 		private static Dictionary<string,Package> _package = new Dictionary<string, Package>();
 		public static readonly Package MainPackage = CreatePackage("core");
 		private static Bundle<Render.Sprite>[] sprites = new Bundle<Render.Sprite>[0x100];
 		public static readonly Random rng = new Random();
-		public static Object.Player player;
+		public static Object.Player Player {
+			get { return (Object.Player)map[new IdentityNumber(0)]; }
+			set { map[new IdentityNumber(0)] = value; }
+		}
 
 		static Database() {
 			sprites[0] = new Bundle<Render.Sprite>(MainPackage);
 		}
 
-		public static Identifiable Get(IdentityNumber id) { WriteLine("get id " + id.ToString()); return map[id]; }
-		public static bool Release(IdentityNumber id) { WriteLine("release id " + id.ToString()); return map.Release(id); }
+		public static Identifiable Get(IdentityNumber id) {
+			if(!map.Has(id))
+				throw new UnregisteredObjectException(id, null);
+			WriteLine("get id " + id.ToString()); return map[id];
+		}
+		public static bool Release(IdentityNumber id) {
+			WriteLine("release id " + id.ToString());
+			if(!map.Has(id))
+				throw new UnregisteredObjectException(id, null);
+			return map.Release(id);
+		}
 
 		public static Package CreatePackage(string name) {
 			var output = new Package(name);
 			RegisterPackage(output);
 			return output;
 		}
-		internal static Package GetPackage(byte id) { return _pack[id]; }
+		internal static Package GetPackage(byte id) {
+			if(!_registered[id])
+				throw new UnregisteredPackageException(id, null);
+			return _pack[id];
+		}
+		internal static Package GetPackage(string name) {
+			if(!_package.ContainsKey(name))
+				throw new UnregisteredPackageNameException(name, null);
+			return _package[name];
+		}
 		internal static byte GetPackageNumber() { return _nextpackage++; }
-		internal static void RegisterPackage(Package p) { _package[p.Name] = p; }
+		internal static void RegisterPackage(Package p) {
+			_package[p.Name] = p;
+			_registered[p.Identifier] = true;
+		}
 
 		internal static bool AddSprite(Package pack, string key, Render.Sprite sprite) { return sprites[pack.Identifier].Add(sprite, key); }
 		public static Render.Sprite GetSprite(Package pack, string key) {
@@ -266,7 +291,10 @@ namespace Platformer.Data.Struct {
 
 		internal IdentityMap() { dict = new Dictionary<IdentityNumber, Identifiable>(); }
 
-		public Identifiable this[IdentityNumber n] { get { return dict[n]; } }
+		public Identifiable this[IdentityNumber n] {
+			get { return dict[n]; }
+			set { dict[n] = value; }
+		}
 
 		internal bool Has(IdentityNumber n) { return dict.ContainsKey(n); }
 		internal bool Release(IdentityNumber n) { return dict.Remove(n); }

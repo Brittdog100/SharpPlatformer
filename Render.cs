@@ -29,7 +29,7 @@ namespace Platformer {
 		void canvas_DrawAnimated(ICanvasAnimatedControl sender, CanvasAnimatedDrawEventArgs args) {
 			//TODO: rendering code here
 			Input.Logic.Flow();
-			Database.player.Render(args.DrawingSession);
+			Database.Player.Render(args.DrawingSession);
 			args.DrawingSession.DrawLine(new Vector2(0,floor),new Vector2(10000,floor),Color.FromArgb(255,0,0,0));
 		}
 
