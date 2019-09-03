@@ -3,3 +3,6 @@ obj/
 Properties/
 Assets/
 Package.appxmanifest
+.DS_Store
+.vs/
+Platformer.sln

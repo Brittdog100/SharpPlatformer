@@ -63,21 +63,37 @@ using Data.Struct;
 
 	}
 
+	/// <summary>
+	/// This class has been known to retrieve certain things from time to time.
+	/// </summary>
 	public static class Database {
 		private static IdentityMap map = new IdentityMap();
 		private static byte _nextpackage = 0;
-		/// <summary>
-		/// Package for all game objects created by the main game.
-		/// </summary>
 		private static Package[] _pack = new Package[0x100];
 		private static bool[] _registered = new bool[0x100];
 		private static Dictionary<string,Package> _package = new Dictionary<string, Package>();
+		/// <summary>
+		/// The Package containing all of the objects created by the main game.
+		/// </summary>
 		public static readonly Package MainPackage = CreatePackage("core");
 		private static Bundle<Render.Sprite>[] sprites = new Bundle<Render.Sprite>[0x100];
+		private static Bundle<Level.Tile>[] tiles = new Bundle<Level.Tile>[0x100];
 		public static readonly Random rng = new Random();
+		/// <summary>
+		/// Represents the player-controlled object. This will always be
+		/// ID 0x000000, but this is an easier accessor.
+		/// </summary>
 		public static Object.Player Player {
 			get { return (Object.Player)map[new IdentityNumber(0)]; }
 			set { map[new IdentityNumber(0)] = value; }
+		}
+		/// <summary>
+		/// Represents the Level currently loaded. This will always be
+		/// ID 0x000001, but this is an easier accessor.
+		/// </summary>
+		public static Level.Level Level {
+			get { return (Level.Level)map[new IdentityNumber(1)]; }
+			set { map[new IdentityNumber(1)] = value; }
 		}
 
 		static Database() {
@@ -124,6 +140,8 @@ using Data.Struct;
 			} catch(Exception e) { throw new UnregisteredSpriteException(pack, key, e); }
 		}
 		public static Bundle<Render.Sprite> GetSpriteBundle(Package pack) { return sprites[pack.Identifier]; }
+
+		public static bool AddTile(Package pack, string key, Level.Tile tile) { return tiles[pack.Identifier].Add(tile, key); }
 
 	}
 
@@ -254,13 +272,40 @@ namespace Platformer.Data {
 		public static void SerializeBin<T>(T arg, Stream stream) { new BinaryFormatter().Serialize(stream, arg); }
 		public static T DeserializeBin<T>(Stream stream) { return (T)new BinaryFormatter().Deserialize(stream); }
 
-		public static async Task<Render.Sprite> LoadSprite(ICanvasAnimatedControl sender, Struct.Package pack, string path) { WriteLine("started loading " + path);  return await LoadSprite(sender, pack, new IO.DataMap(pack, new IO.AppDataFile(path))); }
+		/// <summary>
+		/// Loads a <code>Sprite</code> from a file.
+		/// </summary>
+		/// <param name="sender">The Canvas Controller for the game canvas.</param>
+		/// <param name="pack">The <code>Package</code> creating the <code>Sprite</code>.</param>
+		/// <param name="path">The path to the <code>Sprite</code>'s <code>DataMap</code>.</param>
+		/// <returns>The <code>Sprite</code> at the given path.</returns>
+		/// <seealso cref="LoadSprite(ICanvasAnimatedControl, Struct.Package, DataMap)"/>
+		/// <seealso cref="Render.Sprite"/>
+		public static async Task<Render.Sprite> LoadSprite(ICanvasAnimatedControl sender, Struct.Package pack, string path) { return await LoadSprite(sender, pack, new IO.DataMap(pack, new IO.AppDataFile(path))); }
+		/// <summary>
+		/// Loads a <code>Sprite</code> from a file.
+		/// </summary>
+		/// <param name="sender">The Canvas Controller for the game canvas.</param>
+		/// <param name="pack">The <code>Package</code> creating the <code>Sprite</code>.</param>
+		/// <param name="map">The <code>DataMap</code> with the properties of the desired <code>Sprite</code>.</param>
+		/// <returns>The <code>Sprite</code> outlined by the given <code>DataMap</code>.</returns>
+		/// <seealso cref="LoadSprite(ICanvasAnimatedControl, Struct.Package, string)"/>
+		/// <seealso cref="Render.Sprite"/>
 		public static async Task<Render.Sprite> LoadSprite(ICanvasAnimatedControl sender, Struct.Package pack, IO.DataMap map) {
 			bool d = map.Has("directional") && (bool)map["directional"].Data;
 			string ft = (string)map["path"].Data;
 			byte l = (byte)map["length"].Data;
 			CanvasBitmap[] f;
 			f = new CanvasBitmap[l];
+			/* So, we start doing some weird stuff here; since there's so much
+			 * potential variability in the way Sprite images can be loaded,
+			 * we put the loaded images into the DataMap as properties. This is
+			 * a void property in a DataMap so it won't be able to be converted
+			 * into a plaintext Property, but that's not a big deal. That said,
+			 * I don't know what the use case for such an operation might be for
+			 * extensions in the game, but it is possible through this method to
+			 * pass higher level data to an object through DataMaps via this method.
+			 */
 			for(int n = 0; n < l; n++)
 				map.Add(new IO.RawProperty("frame" + n, typeof(void), await CanvasBitmap.LoadAsync(sender, AppDataPath(ft + n + ".png"))));
 			if(d)
@@ -296,21 +341,60 @@ namespace Platformer.Data.Struct {
 			set { dict[n] = value; }
 		}
 
+		/// <summary>
+		/// Basically the <code>HasKey</code> method.
+		/// </summary>
+		/// <param name="n">The <code>IdentityNumber</code> to query for.</param>
+		/// <returns>
+		/// <code>True</code> if the given <code>IdentityNumber</code> is
+		/// already in this <code>IdentityMap</code>, <code>False</code>
+		/// otherwise.
+		/// </returns>
 		internal bool Has(IdentityNumber n) { return dict.ContainsKey(n); }
+		/// <summary>
+		/// Removes the given <code>IdentityNumber</code>
+		/// from this <code>IdentityMap</code>, freeing
+		/// the number to prevent leakage.
+		/// </summary>
+		/// <param name="n">The <code>IdentityNumber</code> to release.</param>
+		/// <returns><code>True</code> if the <code>IdentityNumber</code> was successfully removed, <code>False</code> otherwise.</returns>
 		internal bool Release(IdentityNumber n) { return dict.Remove(n); }
 
+		/// <summary>
+		/// This is an internal method so it doesn't really do
+		/// a lot for me to document, except that I'm trying to
+		/// be diligent. Anyway, this hands out a random
+		/// <code>IdentityNumber</code> that isn't used in this
+		/// map.
+		/// </summary>
+		/// <param name="p">The Package whose extension is to be used.</param>
+		/// <returns>An <code>IdentityNumber</code> not used in this <code>IdentityMap</code>.</returns>
 		internal IdentityNumber Random(Package p) {
 			uint output;
-			do
-				output = (uint)Database.rng.Next(0xFFFF);
+			do output = (uint)Database.rng.Next(0xFFFF);
 			while(Has(new IdentityNumber(p, output)));
 			return new IdentityNumber(p.Identifier, output);
 		}
 
 	}
 
+	/// <summary>
+	/// Represents the extension that is responsible for an identifiable object.
+	/// These are dispensed via <code cref="Database.CreatePackage(string)">CreatePackage</code>
+	/// method in the <code>Database</code> class.
+	/// </summary>
+	/// <seealso cref="Database.GetPackage(byte)"/>
+	/// <seealso cref="Database.GetPackage(string)"/>
+	/// <seealso cref="IdentityNumber"/>
 	public struct Package {
+		/// <summary>
+		/// The two-digit hex code that represents this Package.
+		/// </summary>
 		public readonly byte Identifier;
+		/// <summary>
+		/// The key used to reference this Package when its
+		/// Identifier is unknown.
+		/// </summary>
 		public readonly string Name;
 
 		internal Package(string name) {
@@ -322,6 +406,12 @@ namespace Platformer.Data.Struct {
 
 	}
 
+	/// <summary>
+	/// A mostly useless Dictionary-type data structure where
+	/// keys and values are interchangeable.
+	/// </summary>
+	/// <typeparam name="T"></typeparam>
+	/// <typeparam name="U"></typeparam>
 	public class BiDictionary<T,U> {
 		private List<T> tl;
 		private List<U> ul;
@@ -418,22 +508,53 @@ namespace Platformer.Data.IO {
 using Render;
 using Struct;
 
+	/// <summary>
+	/// Represents a file in the AppData folder. Basically a glorified string
+	/// with file loading methods.
+	/// </summary>
 	public struct AppDataFile {
 		public readonly string Path;
 
 		public AppDataFile(string path) { Path = path; }
 
+		/// <summary>
+		/// Retrieves a <code>Stream</code> to the file this <code>AppDataFile</code>
+		/// points to. The stream is read-only.
+		/// </summary>
+		/// <returns>A read-only <code>Stream</code> for the file.</returns>
+		/// <seealso cref="ResourceManager.GetAppDataStream(string)"/>
+		/// <seealso cref="LoadForWrite()"/>
 		public Stream Load() { return ResourceManager.GetAppDataStream(Path).Result; }
+		/// <summary>
+		/// Retrieves a <code>Stream</code> to the file this <code>AppDataFile</code>
+		/// points to. The stream can be written to.
+		/// </summary>
+		/// <returns>A writeable <code>Stream</code> for the file.</returns>
+		/// <seealso cref="ResourceManager.GetAppDataWriteStream(string)"/>
+		/// <seealso cref="Load()"/>
 		public Stream LoadForWrite() { return ResourceManager.GetAppDataWriteStream(Path); }
 
 	}
 
+	/// <summary>
+	/// An interface for objects that can be serialized as a <code>DataMap</code>.
+	/// Practically any data type can be deserialized, but serializing is a bit
+	/// more difficult since often times since the data is not always preserved.
+	/// A good example of this is the <code>Sprite</code> class; when deserialized,
+	/// all of the images no longer have the appropriate file paths, just image objects.
+	/// </summary>
+	/// <seealso cref="DataMap"/>
 	public interface DataMappable {
 
 		DataMap Package();
 
 	}
 
+	/// <summary>
+	/// DataMaps are used as a rudimentary form of deserialization focused on rapid
+	/// development; it is created with human readability in mind, and should be used
+	/// with the <code>.dat</code> file extension except in cases where it shouldn't.
+	/// </summary>
     public class DataMap {
 		private static BiDictionary<string,Type> _types = new BiDictionary<string,Type>(
 			("bool",typeof(bool)),
@@ -453,6 +574,9 @@ using Struct;
 
 		private Dictionary<string,RawProperty> props = new Dictionary<string,RawProperty>();
 		private bool finalized = false;
+		/// <summary>
+		/// The <code>Package</code> responsible for this <code>DataMap</code>.
+		/// </summary>
 		public readonly Package Package;
 
 		public DataMap(Package p) { Package = p; }
@@ -572,6 +696,13 @@ using Struct;
 
 	}
 
+	/// <summary>
+	/// Represents a fully deserialized property in a <code>DataMap</code>.
+	/// Compared to the "refined" <code>Property</code> object, a <code>RawProperty</code>
+	/// is made up of fully useable values rather than <code>string</code> representations.
+	/// </summary>
+	/// <seealso cref="DataMap"/>
+	/// <seealso cref="Property"/>
 	public class RawProperty {
 		public readonly string Name;
 		public readonly Type Type;

@@ -203,6 +203,10 @@ using Data.IO;
 
 	}
 
+	/// <summary>
+	/// Represents a <code>Sprite</code> object as stored
+	/// in the <code>Database</code>.
+	/// </summary>
 	public struct SpriteReference {
 		public readonly Data.Struct.Package Package;
 		public readonly string Key;
