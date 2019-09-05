@@ -68,9 +68,9 @@ namespace Platformer.Input {
 			} else
 				Database.Player.State = 3;
 			if(Database.Player.Velocity.X > 0)
-				Database.Player.Facing = false;
+			Database.Player.Facing = false;
 			if(Database.Player.Velocity.X < 0)
-				Database.Player.Facing = true;
+			Database.Player.Facing = true;
 		}
 
 

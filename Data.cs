@@ -77,6 +77,7 @@ using Data.Struct;
 		/// </summary>
 		public static readonly Package MainPackage = CreatePackage("core");
 		private static Bundle<Render.Sprite>[] sprites = new Bundle<Render.Sprite>[0x100];
+		private static Bundle<Render.StaticSprite>[] tilesprites = new Bundle<Render.StaticSprite>[0x100];
 		private static Bundle<Level.Tile>[] tiles = new Bundle<Level.Tile>[0x100];
 		public static readonly Random rng = new Random();
 		/// <summary>
@@ -133,15 +134,36 @@ using Data.Struct;
 			_registered[p.Identifier] = true;
 		}
 
-		internal static bool AddSprite(Package pack, string key, Render.Sprite sprite) { return sprites[pack.Identifier].Add(sprite, key); }
+		internal static bool AddSprite(Package pack, string key, Render.Sprite sprite) { return sprites[pack].Add(sprite, key); }
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="pack"></param>
+		/// <param name="key"></param>
+		/// <returns></returns>
+		/// <exception cref="UnregisteredSpriteException">If no Sprite is registered under the given Package/Key pair.</exception>
 		public static Render.Sprite GetSprite(Package pack, string key) {
 			try {
-				return sprites[pack.Identifier][key];
+				return sprites[pack][key];
 			} catch(Exception e) { throw new UnregisteredSpriteException(pack, key, e); }
 		}
-		public static Bundle<Render.Sprite> GetSpriteBundle(Package pack) { return sprites[pack.Identifier]; }
+		public static Bundle<Render.Sprite> GetSpriteBundle(Package pack) { return sprites[pack]; }
 
-		public static bool AddTile(Package pack, string key, Level.Tile tile) { return tiles[pack.Identifier].Add(tile, key); }
+		public static bool AddTileSprite(Package pack, string key, Render.StaticSprite sprite) { return tilesprites[pack].Add(sprite, key); }
+		public static Render.StaticSprite GetTileSprite(Package pack, string key) {
+			try {
+				return tilesprites[pack][key];
+			} catch(Exception e) { throw new UnregisteredTileSpriteException(pack, key, e); }
+		}
+		public static Bundle<Render.StaticSprite> GetTileSpriteBundle(Package pack) {
+			if(!_registered[pack])
+				throw new UnregisteredPackageException(pack, null);
+			return tilesprites[pack];
+		}
+
+		public static bool AddTile(Package pack, string key, Level.Tile tile) { return tiles[pack].Add(tile, key); }
+		public static Level.Tile GetTile(Package pack, string key) { return tiles[pack][key]; }
+		public static Bundle<Level.Tile> GetTileBundle(Package pack) { return tiles[pack]; }
 
 	}
 

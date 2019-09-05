@@ -14,6 +14,8 @@ using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
 
+using Platformer.Error;
+
 namespace Platformer {
 
 	public sealed partial class MainPage : Page {
@@ -40,10 +42,35 @@ namespace Platformer {
 }
 
 namespace Platformer.Render {
+using Microsoft.Graphics.Canvas.Effects;
 using Data.IO;
+
+	public static class Effects {
+		private static Transform2DEffect VerticalMirror = new Transform2DEffect() {
+			TransformMatrix = new Matrix3x2(-1, 0, 0, 1, 0, 0)
+		};
+
+		public static void MirrorVertical(CanvasBitmap img) {
+			throw new NotImplementedException();
+			VerticalMirror.Source = img;
+		}
+
+	}
+
+	public class StaticSprite {
+		private CanvasBitmap image;
+
+		public StaticSprite(CanvasBitmap img) { image = img; }
+
+		public static implicit operator CanvasBitmap(StaticSprite s) { return s.image; }
+
+	}
 
 	public class Sprite {
 		protected CanvasBitmap[] frame;
+		/// <summary>
+		/// The number of frames in this Sprite's animation.
+		/// </summary>
 		public byte Length { get; private set; }
 		protected int index = 0;
 
@@ -52,19 +79,43 @@ using Data.IO;
 			Length = (byte)frames.Length;
 		}
 
+		/// <summary>
+		/// Gets the next frame in the sequence.
+		/// </summary>
+		/// <returns>The <code>CanvasBitmap</code> containing the next image in the sprite's sequence.</returns>
 		public CanvasBitmap NextFrame() {
 			int outf = index++;
 			if(index >= Length)
 				index = 0;
 			return frame[outf];
 		}
+		/// <summary>
+		/// Turns the frame counter back to zero, starting the animation over.
+		/// </summary>
 		public void Reset() { index = 0; }
 
 		public bool HasNext() { return frame[index] != null; }
 
+		/// <summary>
+		/// Loads a sprite from a DataMap. This method is
+		/// all but reserved for the sprite loading method
+		/// in the ResourceManager. However, a sprite's
+		/// DataMap should be suffixed as a <code>.sdf</code>
+		/// file, and should contain the following properties:
+		/// <code>byte length</code>: the length of the sprite in frames;
+		/// <code>bool timed</code>: if the sprite has a delay between frames;
+		/// <code>byte wait</code>: the delay, if applicable, between frames as a number of frames;
+		/// <code>bool directional</code>: denotes if the sprite is reversible.
+		/// If you have your own method of loading sprites, the frames should be stored
+		/// in the values <code>frameX</code>, where X is the index of the frame
+		/// stored there as a <code>CanvasBitmap</code>, and <code>rframeX</code>
+		///	for the reverse frames for directional sprites.
+		/// </summary>
+		/// <param name="map">The DataMap to load from. This DataMap will be locked after the operation.</param>
+		/// <returns>The sprite outlined in the given DataMap.</returns>
 		public static Sprite FromDataMap(Data.IO.DataMap map) {
 			if(map.IsLocked())
-				return null;
+				throw new LockedMapException();
 			map.Lock();
 			byte l = (byte)map["length"].Data;
 			bool t = (bool)map["timed"].Data;
@@ -217,8 +268,21 @@ using Data.IO;
 		}
 
 		public Sprite ToSprite() { return Database.GetSprite(Package, Key); }
-		new public string ToString() { return (Package.Identifier + ":" + Key);}
+		new public string ToString() { return (Package.Identifier + ":" + Key); }
 
+	}
+
+	public struct StaticSpriteReference {
+		public readonly Data.Struct.Package Package;
+		public readonly string Key;
+
+		public StaticSpriteReference(Data.Struct.Package p, string k) {
+			Package = p;
+			Key = k;
+		}
+
+		public StaticSprite ToSprite() { return Database.GetStaticSprite(Package, Key); }
+		new public string ToString() { return (Package.Identifier + ":" + Key); }
 	}
 
 }

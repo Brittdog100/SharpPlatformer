@@ -47,9 +47,22 @@ namespace Platformer.Error {
 	
 	}
 
+	public class UnregisteredTileSpriteException : UnregisteredItemException {
+
+		public UnregisteredTileSpriteException(Package pack, string key, Exception inner) : base ("tile sprite", pack, key, inner) { }
+
+	}
+
 	public class UnregisteredScriptException : UnregisteredItemException {
 
 		public UnregisteredScriptException(Package pack, string key, Exception inner) : base("script", pack, key, inner) { }
+
+	}
+
+	public class LockedMapException : Exception {
+
+		public LockedMapException() : this(null) { }
+		public LockedMapException(Exception inner) : base("The given DataMap is locked", inner) { }
 
 	}
 
