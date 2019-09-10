@@ -66,7 +66,7 @@ using Data.Struct;
 	/// <summary>
 	/// This class has been known to retrieve certain things from time to time.
 	/// </summary>
-	public static class Database {
+	public static partial class Database {
 		private static IdentityMap map = new IdentityMap();
 		private static byte _nextpackage = 0;
 		private static Package[] _pack = new Package[0x100];
@@ -99,21 +99,73 @@ using Data.Struct;
 
 		static Database() {
 			sprites[0] = new Bundle<Render.Sprite>(MainPackage);
+			tilesprites[0] = new Bundle<Render.StaticSprite>(MainPackage);
+			tiles[0] = new Bundle<Level.Tile>(MainPackage);
 		}
 
-		public static Identifiable Get(IdentityNumber id) {
-			if(!map.Has(id))
-				throw new UnregisteredObjectException(id, null);
-			WriteLine("get id " + id.ToString()); return map[id];
+		/// <summary>
+		/// Determines the cause of error for an unregistered ID.
+		/// </summary>
+		/// <param name="id">An ID</param>
+		/// <returns>An <code>UnregisteredPackageException</code> if the package
+		/// is not registered, or an <code>UnregisteredObjectException</code> otherwise.
+		/// </returns>
+		private static Exception GetNumError(IdentityNumber id) {
+			if(!_registered[id.Package])
+				return new UnregisteredPackageException(id.Package);
+			else
+				return new UnregisteredObjectException(id);
 		}
+
+		/// <summary>
+		/// Returns the object associated with an ID.
+		/// </summary>
+		/// <param name="id">The ID number.</param>
+		/// <returns>The object at that ID.</returns>
+		/// <exception cref="UnregisteredObjectException">If no object is found
+		/// at the given ID.
+		/// </exception>
+		/// <exception cref="UnregisteredPackageException">If the package specified
+		/// by the ID is not registered.
+		/// </exception>
+		public static Identifiable Get(IdentityNumber id) {
+			WriteLine("get id " + id.ToString());
+			if (!map.Has(id))
+				throw GetNumError(id);
+			return map[id];
+		}
+		/// <summary>
+		/// Releases an ID and removes its object from the Database.
+		/// </summary>
+		/// <param name="id">The ID to release.</param>
+		/// <returns><code>True</code> if the ID was released successfully,
+		/// <code>False</code> otherwise.
+		/// </returns>
+		/// <exception cref="UnregisteredObjectException">If no object is found
+		/// at the specified ID.
+		/// </exception>
+		/// <exception cref="UnregisteredPackageException">If the package specified
+		/// by the ID is not registered.
+		/// </exception>
 		public static bool Release(IdentityNumber id) {
 			WriteLine("release id " + id.ToString());
+			//You know, this probably shouldn't throw exceptions but uh
 			if(!map.Has(id))
-				throw new UnregisteredObjectException(id, null);
+				throw GetNumError(id);
 			return map.Release(id);
 		}
 
+		/// <summary>
+		/// Creates a new package with the given name.
+		/// </summary>
+		/// <param name="name">The desired package name.</param>
+		/// <returns>A registered package with the provided name.</returns>
+		/// <exception cref="PackageNameOverrideException">If the package name specified
+		/// is already taken.
+		/// </exception>>
 		public static Package CreatePackage(string name) {
+			if(_package.ContainsKey(name))
+				throw new PackageNameOverrideException(name);
 			var output = new Package(name);
 			RegisterPackage(output);
 			return output;
@@ -125,16 +177,17 @@ using Data.Struct;
 		}
 		internal static Package GetPackage(string name) {
 			if(!_package.ContainsKey(name))
-				throw new UnregisteredPackageNameException(name, null);
+				throw new UnregisteredPackageNameException(name);
 			return _package[name];
 		}
 		internal static byte GetPackageNumber() { return _nextpackage++; }
 		internal static void RegisterPackage(Package p) {
+			if(_registered[p])
+				throw new PackageOverrideException(p.Identifier);
 			_package[p.Name] = p;
-			_registered[p.Identifier] = true;
+			_registered[p] = true;
 		}
-
-		internal static bool AddSprite(Package pack, string key, Render.Sprite sprite) { return sprites[pack].Add(sprite, key); }
+		internal static bool GetSprite(Package pack, string key, Render.Sprite sprite) { return sprites[pack].Add(sprite, key); }
 		/// <summary>
 		/// 
 		/// </summary>
@@ -142,10 +195,12 @@ using Data.Struct;
 		/// <param name="key"></param>
 		/// <returns></returns>
 		/// <exception cref="UnregisteredSpriteException">If no Sprite is registered under the given Package/Key pair.</exception>
+		/// <exception cref="UnregisteredPackageException">If the given package is not registered.</exception>
 		public static Render.Sprite GetSprite(Package pack, string key) {
-			try {
-				return sprites[pack][key];
-			} catch(Exception e) { throw new UnregisteredSpriteException(pack, key, e); }
+			if(!_registered(pack))
+				throw new UnregisteredPackageException(pack);
+			try { return sprites[pack][key]; }
+			catch(Exception e) { throw new UnregisteredSpriteException(pack, key, e); }
 		}
 		public static Bundle<Render.Sprite> GetSpriteBundle(Package pack) { return sprites[pack]; }
 
@@ -521,6 +576,15 @@ namespace Platformer.Data.Struct {
 			this[k] = t;
 			return true;
 		}
+
+	}
+
+	public struct Reference<T> where T : Identifiable {
+		public readonly IdentityNumber Identity;
+
+		public Reference(IdentityNumber id) { Identity = id; }
+
+		public static implicit operator T(Reference<T> r) { return Database.Get(r.Identity); }
 
 	}
 

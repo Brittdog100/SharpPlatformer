@@ -245,6 +245,10 @@ using Data.IO;
 				return (sprite[_state] as TimedSprite).NextFrame();
 			return sprite[_state].NextFrame();
 		}
+		/// <summary>
+		/// Ensures that there's actually a sprite in the current index;
+		/// if not, it fetches it from the Database class.
+		/// </summary>
 		public void VerifySprite() {
 			if(sprite[_state] == null)
 				sprite[_state] = backup[_state].ToSprite();
@@ -256,12 +260,13 @@ using Data.IO;
 
 	/// <summary>
 	/// Represents a <code>Sprite</code> object as stored
-	/// in the <code>Database</code>.
+	/// in the <code>Database</code> class.
 	/// </summary>
 	public struct SpriteReference {
 		public readonly Data.Struct.Package Package;
 		public readonly string Key;
 
+		public SpriteReference(string p, string k) : this(Database.GetPackage(p), k) { }
 		public SpriteReference(Data.Struct.Package p, string k) {
 			Package = p;
 			Key = k;
@@ -272,6 +277,10 @@ using Data.IO;
 
 	}
 
+	/// <summary>
+	/// Represents a <code>StaticSprite</code> object as stored
+	/// in the <code>Database</code> class.
+	/// </summary>
 	public struct StaticSpriteReference {
 		public readonly Data.Struct.Package Package;
 		public readonly string Key;
@@ -283,6 +292,7 @@ using Data.IO;
 
 		public StaticSprite ToSprite() { return Database.GetStaticSprite(Package, Key); }
 		new public string ToString() { return (Package.Identifier + ":" + Key); }
+
 	}
 
 }

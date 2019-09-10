@@ -30,6 +30,7 @@ namespace Platformer.Input {
 			gravity,
 			jumpforce,
 			friction;
+
 		static Logic() {
 			Data.IO.DataMap dat = new Data.IO.DataMap(Database.MainPackage,new Data.IO.AppDataFile(@"asset\testcontrols.dat"));
 			movemodifier = (float)dat["movement"].Data;
@@ -134,4 +135,28 @@ namespace Platformer.Input {
 		}
 
 	}
+
+}
+
+namespace Platformer.Logic {
+using Data;
+using Data.Struct;
+
+	public abstract class Behavior {
+		protected bool ShouldMove;
+		protected Direction MoveDirection;
+		protected Reference<Entity> Target;
+
+		public Behavior(Reference<Entity> reference) { Target = reference; }
+
+		public abstract void Query();
+		public abstract void Move();
+
+	}
+
+	public class LinearBehavior {//: Behavior {
+
+
+	}
+
 }

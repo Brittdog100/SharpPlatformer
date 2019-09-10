@@ -4,11 +4,26 @@ using Platformer.Render;
 
 namespace Platformer.Level {
 
+	public enum TileBehavior {
+		EMPTY = 0,
+		COLLIDE = 0b1,
+		SLOW = 0b10,
+		BOUNCE = 0b100,
+		SWIM = 0b1000,
+		DAMAGE = 0b1_0000;
+	}
+
 	public class Tile {
 		private StaticSpriteReference imgref;
+		public TileBehavior Behavior { get; private set; }
 
 		public Tile(StaticSpriteReference img) {
 			imgref = img;
+			Behavior = 0;
+		}
+		public Tile(StaticSpriteReference img, TileBehavior behavior) {
+			imgref = img;
+			Behavior = behavior;
 		}
 
 	}
