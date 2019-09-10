@@ -8,8 +8,15 @@ using Platformer.Render;
 
 namespace Platformer.Object {
 
+	/// <summary>
+	/// Represents a player-controlled entity.
+	/// </summary>
 	public sealed class Player : Entity, Directional, Identifiable {
 		private SpriteSheet sprites;
+		/// <summary>
+		/// The velocity of this entity to be used in the next physics
+		/// 
+		/// </summary>
 		public Vector2 Velocity = new Vector2(0,0);
 		private bool _dir = false;
 		public bool Facing {

@@ -1,2 +1,3 @@
-﻿sheet sprite asset\sprite\testPlayer.ssf
+﻿bool isplayer true
+sheet sprite asset\sprite\testPlayer.ssf
 rect bounds 32,48

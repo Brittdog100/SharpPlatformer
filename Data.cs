@@ -632,6 +632,10 @@ using Struct;
 	/// <seealso cref="DataMap"/>
 	public interface DataMappable {
 
+		/// <summary>
+		/// Stores the state of this object as a DataMap to be exported to a file.
+		/// </summary>
+		/// <returns></returns>
 		DataMap Package();
 
 	}
@@ -643,19 +647,21 @@ using Struct;
 	/// </summary>
     public class DataMap {
 		private static BiDictionary<string,Type> _types = new BiDictionary<string,Type>(
-			("bool",typeof(bool)),
-			("byte",typeof(byte)),
-			("dat",typeof(DataMap)),
-			("double",typeof(double)),
-			("file",typeof(AppDataFile)),
-			("float",typeof(float)),
-			("int",typeof(int)),
-			("point",typeof(Point)),
-			("rect",typeof(Rect)),
-			("sheet",typeof(SpriteSheet)),
-			("sprite",typeof(SpriteReference)),
-			("str",typeof(string)),
-			("vec",typeof(Vector2))
+			("behavior", typeof(Reference<Logic.Behavior>),
+			("bool", typeof(bool)),
+			("byte", typeof(byte)),
+			("dat", typeof(DataMap)),
+			("double", typeof(double)),
+			("file", typeof(AppDataFile)),
+			("float", typeof(float)),
+			("int", typeof(int)),
+			("point", typeof(Point)),
+			("rect", typeof(Rect)),
+			("sheet", typeof(SpriteSheet)),
+			("sprite", typeof(SpriteReference)),
+			("str", typeof(string)),
+			("texture", typeof(StaticSprite)),
+			("vec", typeof(Vector2))
 		);
 
 		private Dictionary<string,RawProperty> props = new Dictionary<string,RawProperty>();
@@ -689,6 +695,10 @@ using Struct;
 
 		public void ToFile(AppDataFile path) {
 			//TODO make this thing
+			var stream = new StreamWriter(ResourceManager.GetAppDataWriteStream(path));
+			foreach(string k in props.Keys) {
+
+			}
 		}
 
 		public static Type GetType(string t) {
@@ -724,11 +734,20 @@ using Struct;
 			case "rect" :
 				string[] rect = prop.Data.Split(',');
 				return new Rect(0,0,double.Parse(rect[0]), double.Parse(rect[1]));
-			//case "sheet" : return new SpriteSheet(new DataMap(new AppDataFile(prop.Data)));
+			case "sheet" : return new SpriteSheet(new DataMap(new AppDataFile(prop.Data)));
 			case "sprite" :
 				string[] sprite = prop.Data.Split(':');
-				return new SpriteReference(Database.GetPackage(byte.Parse(sprite[0])), sprite[1]);
+				byte spritepacknum;
+				if(byte.TryParse(sprite[0], packnum))
+					return new SpriteReference(packnum, sprite[1]);
+				else return new SpriteReference(sprite[0], sprite[1]);
 			case "str" : return prop.Data;
+			case "texture" :
+				string[] texture = prop.Data.Split(':');
+				byte texpacknum;
+				if(byte.TryParse(texture[0]))
+					return new StaticSpriteReference(texpacknum, texture[1]);
+				else return new StaticSpriteReference(texture[0], texture[1]);
 			case "vec" :
 				string[] vec = prop.Data.Split(',');
 				return new Vector2(float.Parse(vec[0]), float.Parse(vec[1]));

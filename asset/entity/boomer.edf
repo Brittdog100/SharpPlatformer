@@ -1,0 +1,4 @@
+﻿bool isplayer false
+string behavior core:linearbehavior
+sheet sprite asset\sprite\boomer.ssf
+rect bounds 32,32

@@ -157,6 +157,7 @@ using Data.Struct;
 	public class LinearBehavior {//: Behavior {
 
 
+
 	}
 
 }

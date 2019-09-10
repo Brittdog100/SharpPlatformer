@@ -267,6 +267,7 @@ using Data.IO;
 		public readonly string Key;
 
 		public SpriteReference(string p, string k) : this(Database.GetPackage(p), k) { }
+		public SpriteReference(byte p, string k) : this(Database.GetPackage(p), k) { }
 		public SpriteReference(Data.Struct.Package p, string k) {
 			Package = p;
 			Key = k;
