@@ -52,17 +52,17 @@ using Data.IO;
 
 		public static void MirrorVertical(CanvasBitmap img) {
 			throw new NotImplementedException();
-			VerticalMirror.Source = img;
+			//VerticalMirror.Source = img;
 		}
 
 	}
 
-	public class StaticSprite {
+	public class Texture {
 		private CanvasBitmap image;
 
-		public StaticSprite(CanvasBitmap img) { image = img; }
+		public Texture(CanvasBitmap img) { image = img; }
 
-		public static implicit operator CanvasBitmap(StaticSprite s) { return s.image; }
+		public static implicit operator CanvasBitmap(Texture s) { return s.image; }
 
 	}
 
@@ -282,16 +282,16 @@ using Data.IO;
 	/// Represents a <code>StaticSprite</code> object as stored
 	/// in the <code>Database</code> class.
 	/// </summary>
-	public struct StaticSpriteReference {
+	public struct TextureReference {
 		public readonly Data.Struct.Package Package;
 		public readonly string Key;
 
-		public StaticSpriteReference(Data.Struct.Package p, string k) {
+		public TextureReference(Data.Struct.Package p, string k) {
 			Package = p;
 			Key = k;
 		}
 
-		public StaticSprite ToSprite() { return Database.GetStaticSprite(Package, Key); }
+		public Texture ToSprite() { return Database.GetTexture(Package, Key); }
 		new public string ToString() { return (Package.Identifier + ":" + Key); }
 
 	}

@@ -25,10 +25,13 @@ using Data.Struct;
 		private static bool _spritesmade = false;
 		public static event Event.CreationEvent CreatingSheets;
 		private static bool _sheetsmade = false;
+		public static event Event.TextureCreationEvent CreatingTextures;
+		private static bool _texturesmade = false;
 
 		static Initialization() {
 			CreatingSprites += CreateCoreSprites;
 			CreatingSheets += CreateCoreSpriteSheets;
+			CreatingTextures += CreateCoreTextures;
 		}
 
 		public static async Task CreateSprites(ICanvasAnimatedControl sender) {
@@ -43,6 +46,12 @@ using Data.Struct;
 			_sheetsmade = true;
 			CreatingSheets();
 		}
+		public static async Task CreateTextures(ICanvasAnimatedControl sender) {
+			if(_spritesmade)
+				return;
+			_texturesmade = true;
+			await CreatingTextures(sender);
+		}
 
 		private async static Task CreateCoreSprites(ICanvasAnimatedControl sender) {
 			WriteLine("starting sprite prep");
@@ -54,6 +63,12 @@ using Data.Struct;
 		}
 		private static void CreateCoreSpriteSheets() {
 			
+		}
+
+		private async static Task CreateCoreTextures(ICanvasAnimatedControl sender) {
+			WriteLine("starting texture prep");
+			await ResourceManager.LoadTexture(sender, Database.MainPackage, @"asset\texture\default\ground.png", "ground");
+			WriteLine("finished texture prep");
 		}
 
 		public static void PreparePlayer() {
@@ -77,7 +92,7 @@ using Data.Struct;
 		/// </summary>
 		public static readonly Package MainPackage = CreatePackage("core");
 		private static Bundle<Render.Sprite>[] sprites = new Bundle<Render.Sprite>[0x100];
-		private static Bundle<Render.StaticSprite>[] tilesprites = new Bundle<Render.StaticSprite>[0x100];
+		private static Bundle<Render.Texture>[] tilesprites = new Bundle<Render.Texture>[0x100];
 		private static Bundle<Level.Tile>[] tiles = new Bundle<Level.Tile>[0x100];
 		public static readonly Random rng = new Random();
 		/// <summary>
@@ -99,7 +114,7 @@ using Data.Struct;
 
 		static Database() {
 			sprites[0] = new Bundle<Render.Sprite>(MainPackage);
-			tilesprites[0] = new Bundle<Render.StaticSprite>(MainPackage);
+			tilesprites[0] = new Bundle<Render.Texture>(MainPackage);
 			tiles[0] = new Bundle<Level.Tile>(MainPackage);
 		}
 
@@ -187,7 +202,8 @@ using Data.Struct;
 			_package[p.Name] = p;
 			_registered[p] = true;
 		}
-		internal static bool GetSprite(Package pack, string key, Render.Sprite sprite) { return sprites[pack].Add(sprite, key); }
+
+		internal static bool AddSprite(Package pack, string key, Render.Sprite sprite) { return sprites[pack].Add(sprite, key); }
 		/// <summary>
 		/// 
 		/// </summary>
@@ -197,20 +213,20 @@ using Data.Struct;
 		/// <exception cref="UnregisteredSpriteException">If no Sprite is registered under the given Package/Key pair.</exception>
 		/// <exception cref="UnregisteredPackageException">If the given package is not registered.</exception>
 		public static Render.Sprite GetSprite(Package pack, string key) {
-			if(!_registered(pack))
+			if(!_registered[pack])
 				throw new UnregisteredPackageException(pack);
 			try { return sprites[pack][key]; }
 			catch(Exception e) { throw new UnregisteredSpriteException(pack, key, e); }
 		}
 		public static Bundle<Render.Sprite> GetSpriteBundle(Package pack) { return sprites[pack]; }
 
-		public static bool AddTileSprite(Package pack, string key, Render.StaticSprite sprite) { return tilesprites[pack].Add(sprite, key); }
-		public static Render.StaticSprite GetTileSprite(Package pack, string key) {
+		public static bool AddTexture(Package pack, string key, Render.Texture sprite) { return tilesprites[pack].Add(sprite, key); }
+		public static Render.Texture GetTexture(Package pack, string key) {
 			try {
 				return tilesprites[pack][key];
 			} catch(Exception e) { throw new UnregisteredTileSpriteException(pack, key, e); }
 		}
-		public static Bundle<Render.StaticSprite> GetTileSpriteBundle(Package pack) {
+		public static Bundle<Render.Texture> GetTextureBundle(Package pack) {
 			if(!_registered[pack])
 				throw new UnregisteredPackageException(pack, null);
 			return tilesprites[pack];
@@ -391,6 +407,13 @@ namespace Platformer.Data {
 			string key = (string)map["key"].Data;
 			Render.Sprite output = Render.Sprite.FromDataMap(map);
 			if(Database.AddSprite(pack, key, output))
+				return output;
+			else return null;
+		}
+		public static async Task<Render.Texture> LoadTexture(ICanvasAnimatedControl sender, Struct.Package pack, string path, string key) {
+			var img = await CanvasBitmap.LoadAsync(sender, path);
+			var output = new Render.Texture(img);
+			if(Database.AddTexture(pack, key, output))
 				return output;
 			else return null;
 		}
@@ -584,7 +607,7 @@ namespace Platformer.Data.Struct {
 
 		public Reference(IdentityNumber id) { Identity = id; }
 
-		public static implicit operator T(Reference<T> r) { return Database.Get(r.Identity); }
+		public static implicit operator T(Reference<T> r) { return (T)Database.Get(r.Identity); }
 
 	}
 
@@ -647,7 +670,7 @@ using Struct;
 	/// </summary>
     public class DataMap {
 		private static BiDictionary<string,Type> _types = new BiDictionary<string,Type>(
-			("behavior", typeof(Reference<Logic.Behavior>),
+			("behavior", typeof(Reference<Logic.Behavior>)),
 			("bool", typeof(bool)),
 			("byte", typeof(byte)),
 			("dat", typeof(DataMap)),
@@ -660,7 +683,7 @@ using Struct;
 			("sheet", typeof(SpriteSheet)),
 			("sprite", typeof(SpriteReference)),
 			("str", typeof(string)),
-			("texture", typeof(StaticSprite)),
+			("texture", typeof(Texture)),
 			("vec", typeof(Vector2))
 		);
 
@@ -671,6 +694,7 @@ using Struct;
 		/// </summary>
 		public readonly Package Package;
 
+		internal DataMap(AppDataFile f) : this(default, f) { }
 		public DataMap(Package p) { Package = p; }
 		public DataMap(Package p, AppDataFile f) : this(p){
 			using(StreamReader s = new StreamReader(f.Load())) {
@@ -695,7 +719,7 @@ using Struct;
 
 		public void ToFile(AppDataFile path) {
 			//TODO make this thing
-			var stream = new StreamWriter(ResourceManager.GetAppDataWriteStream(path));
+			var stream = new StreamWriter(path.LoadForWrite());
 			foreach(string k in props.Keys) {
 
 			}
@@ -738,16 +762,16 @@ using Struct;
 			case "sprite" :
 				string[] sprite = prop.Data.Split(':');
 				byte spritepacknum;
-				if(byte.TryParse(sprite[0], packnum))
-					return new SpriteReference(packnum, sprite[1]);
+				if(byte.TryParse(sprite[0], out spritepacknum))
+					return new SpriteReference(spritepacknum, sprite[1]);
 				else return new SpriteReference(sprite[0], sprite[1]);
 			case "str" : return prop.Data;
 			case "texture" :
 				string[] texture = prop.Data.Split(':');
 				byte texpacknum;
-				if(byte.TryParse(texture[0]))
-					return new StaticSpriteReference(texpacknum, texture[1]);
-				else return new StaticSpriteReference(texture[0], texture[1]);
+				if(byte.TryParse(texture[0], out texpacknum))
+					return new TextureReference(Database.GetPackage(texpacknum), texture[1]);
+				else return new TextureReference(Database.GetPackage(texture[0]), texture[1]);
 			case "vec" :
 				string[] vec = prop.Data.Split(',');
 				return new Vector2(float.Parse(vec[0]), float.Parse(vec[1]));

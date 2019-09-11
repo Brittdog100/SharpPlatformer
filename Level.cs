@@ -10,18 +10,18 @@ namespace Platformer.Level {
 		SLOW = 0b10,
 		BOUNCE = 0b100,
 		SWIM = 0b1000,
-		DAMAGE = 0b1_0000;
+		DAMAGE = 0b1_0000
 	}
 
 	public class Tile {
-		private StaticSpriteReference imgref;
+		private TextureReference imgref;
 		public TileBehavior Behavior { get; private set; }
 
-		public Tile(StaticSpriteReference img) {
+		public Tile(TextureReference img) {
 			imgref = img;
 			Behavior = 0;
 		}
-		public Tile(StaticSpriteReference img, TileBehavior behavior) {
+		public Tile(TextureReference img, TileBehavior behavior) {
 			imgref = img;
 			Behavior = behavior;
 		}

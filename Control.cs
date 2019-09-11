@@ -142,7 +142,7 @@ namespace Platformer.Logic {
 using Data;
 using Data.Struct;
 
-	public abstract class Behavior {
+	public abstract class Behavior : Identifiable {
 		protected bool ShouldMove;
 		protected Direction MoveDirection;
 		protected Reference<Entity> Target;
@@ -151,7 +151,7 @@ using Data.Struct;
 
 		public abstract void Query();
 		public abstract void Move();
-
+		public abstract IdentityNumber GetID();
 	}
 
 	public class LinearBehavior {//: Behavior {
