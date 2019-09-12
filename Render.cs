@@ -17,6 +17,9 @@ using Windows.UI.Xaml.Media.Imaging;
 using Platformer.Error;
 
 namespace Platformer {
+using Data.Struct;
+using Render;
+using Geometry;
 
 	public sealed partial class MainPage : Page {
 
@@ -36,6 +39,55 @@ namespace Platformer {
 		}
 
 		internal void setBackground(Brush b) { Background = b; }
+
+		public static Coordinate GetRelative(Coordinate c) { return c - Database.Camera; }
+
+	}
+
+	public static partial class Database {
+		private static Bundle<Sprite>[] sprites = new Bundle<Render.Sprite>[0x100];
+		private static Bundle<Texture>[] tilesprites = new Bundle<Texture>[0x100];
+		internal static Coordinate Camera = new Coordinate(0, 0);
+
+		/// <summary>
+		/// Registers a sprite.
+		/// </summary>
+		/// <param name="pack"></param>
+		/// <param name="key"></param>
+		/// <param name="sprite"></param>
+		/// <returns></returns>
+		internal static bool AddSprite(Package pack, string key, Sprite sprite) { return sprites[pack].Add(sprite, key); }
+		/// <summary>
+		/// Gets a registered sprite.
+		/// </summary>
+		/// <param name="pack">The package the sprite is registered under.</param>
+		/// <param name="key">The name of the sprite.</param>
+		/// <returns></returns>
+		/// <exception cref="UnregisteredSpriteException">If no Sprite is registered under the given Package/Key pair.</exception>
+		/// <exception cref="UnregisteredPackageException">If the given package is not registered.</exception>
+		public static Sprite GetSprite(Package pack, string key) {
+			if(!_registered[pack])
+				throw new UnregisteredPackageException(pack);
+			try { return sprites[pack][key]; } catch(Exception e) { throw new UnregisteredSpriteException(pack, key, e); }
+		}
+		/// <summary>
+		/// Gets the bundle containing the sprites for the given package.
+		/// </summary>
+		/// <param name="pack">The package to return a bundle from.</param>
+		/// <returns>A bundle with all of the sprites registered under the given package.</returns>
+		public static Bundle<Sprite> GetSpriteBundle(Package pack) { return sprites[pack]; }
+
+		public static bool AddTexture(Package pack, string key, Texture sprite) { return tilesprites[pack].Add(sprite, key); }
+		public static Texture GetTexture(Package pack, string key) {
+			try {
+				return tilesprites[pack][key];
+			} catch(Exception e) { throw new UnregisteredTextureException(pack, key, e); }
+		}
+		public static Bundle<Texture> GetTextureBundle(Package pack) {
+			if(!_registered[pack])
+				throw new UnregisteredPackageException(pack, null);
+			return tilesprites[pack];
+		}
 
 	}
 
@@ -291,7 +343,7 @@ using Data.IO;
 			Key = k;
 		}
 
-		public Texture ToSprite() { return Database.GetTexture(Package, Key); }
+		public Texture ToTexture() { return Database.GetTexture(Package, Key); }
 		new public string ToString() { return (Package.Identifier + ":" + Key); }
 
 	}

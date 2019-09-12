@@ -17,7 +17,6 @@ namespace Platformer.Object {
 		/// The velocity of this entity to be used in the next physics
 		/// calculation.
 		/// </summary>
-		public Vector2 Velocity = new Vector2(0,0);
 		private bool _dir = false;
 		public bool Facing {
 			get { return _dir; }

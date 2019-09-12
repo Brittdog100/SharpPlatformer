@@ -50,7 +50,7 @@ namespace Platformer.Error {
 	public class PackageOverrideException : Exception {
 		public readonly byte Identifier;
 
-		public PackageOverrideException(byte num) : this(pack, null) { }
+		public PackageOverrideException(byte num) : this(num, null) { }
 		public PackageOverrideException(byte num, Exception inner)
 		: base("A package is already registered with the ID " + num, inner) { Identifier = num; }
 
@@ -72,6 +72,7 @@ namespace Platformer.Error {
 		public readonly Package Package;
 		public readonly string Key;
 
+		public UnregisteredItemException(string type, Package pack, string key) : this(type, pack, key, null) { }
 		public UnregisteredItemException(string type, Package pack, string key, Exception inner)
 		: base("Attempted to load unregistered " + type + " " + pack.Identifier + ":" + key, inner) {
 			Package = pack;
@@ -82,19 +83,33 @@ namespace Platformer.Error {
 
 	public class UnregisteredSpriteException : UnregisteredItemException {
 	
+		public UnregisteredSpriteException(Package pack, string key) : this(pack, key, null) { }
 		public UnregisteredSpriteException(Package pack, string key, Exception inner) : base("sprite", pack, key, inner) { }
 	
 	}
 
-	public class UnregisteredTileSpriteException : UnregisteredItemException {
+	public class UnregisteredTextureException : UnregisteredItemException {
 
-		public UnregisteredTileSpriteException(Package pack, string key, Exception inner) : base ("tile sprite", pack, key, inner) { }
+		public UnregisteredTextureException(Package pack, string key, Exception inner) : base ("tile sprite", pack, key, inner) { }
 
 	}
 
 	public class UnregisteredScriptException : UnregisteredItemException {
 
 		public UnregisteredScriptException(Package pack, string key, Exception inner) : base("script", pack, key, inner) { }
+
+	}
+
+	public class ShortBundleOverflowException : Exception {
+		public readonly Package Package;
+		public readonly Type Type;
+
+		public ShortBundleOverflowException(Package pack, Type type) : this(pack, type, null) { }
+		public ShortBundleOverflowException(Package pack, Type type, Exception inner)
+		: base("Package " + pack.Name + "'s " + type.ToString() + " shortbundle is already full!", inner) {
+			Package = pack;
+			Type = type;
+		}
 
 	}
 

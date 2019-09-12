@@ -27,11 +27,14 @@ using Data.Struct;
 		private static bool _sheetsmade = false;
 		public static event Event.TextureCreationEvent CreatingTextures;
 		private static bool _texturesmade = false;
+		public static event Event.CreationEvent CreatingTiles;
+		private static bool _tilesmade = false;
 
 		static Initialization() {
 			CreatingSprites += CreateCoreSprites;
 			CreatingSheets += CreateCoreSpriteSheets;
 			CreatingTextures += CreateCoreTextures;
+			CreatingTiles += CreateCoreTiles;
 		}
 
 		public static async Task CreateSprites(ICanvasAnimatedControl sender) {
@@ -47,10 +50,16 @@ using Data.Struct;
 			CreatingSheets();
 		}
 		public static async Task CreateTextures(ICanvasAnimatedControl sender) {
-			if(_spritesmade)
+			if(_texturesmade)
 				return;
 			_texturesmade = true;
 			await CreatingTextures(sender);
+		}
+		public static void CreateTiles() {
+			if(_tilesmade)
+				return;
+			_tilesmade = true;
+			CreatingTiles();
 		}
 
 		private async static Task CreateCoreSprites(ICanvasAnimatedControl sender) {
@@ -71,6 +80,12 @@ using Data.Struct;
 			WriteLine("finished texture prep");
 		}
 
+		private static void CreateCoreTiles() {
+			WriteLine("starting tile creation");
+			Database.AddTile(Database.MainPackage, new Geometry.Tile());
+			WriteLine("finished tile creation");
+		}
+
 		public static void PreparePlayer() {
 			//TODO
 			Database.Player = new Object.Player(new Render.SpriteSheet(new Data.IO.DataMap(Database.MainPackage, new Data.IO.AppDataFile(@"asset\sprite\testplayer.ssf"))));
@@ -79,7 +94,7 @@ using Data.Struct;
 	}
 
 	/// <summary>
-	/// This class has been known to retrieve certain things from time to time.
+	/// This class is used to store game objects and general data storage.
 	/// </summary>
 	public static partial class Database {
 		private static IdentityMap map = new IdentityMap();
@@ -91,9 +106,7 @@ using Data.Struct;
 		/// The Package containing all of the objects created by the main game.
 		/// </summary>
 		public static readonly Package MainPackage = CreatePackage("core");
-		private static Bundle<Render.Sprite>[] sprites = new Bundle<Render.Sprite>[0x100];
-		private static Bundle<Render.Texture>[] tilesprites = new Bundle<Render.Texture>[0x100];
-		private static Bundle<Level.Tile>[] tiles = new Bundle<Level.Tile>[0x100];
+		private static SmallBatch<Geometry.Tile>[] tiles = new SmallBatch<Geometry.Tile>[0x100];
 		public static readonly Random rng = new Random();
 		/// <summary>
 		/// Represents the player-controlled object. This will always be
@@ -107,15 +120,15 @@ using Data.Struct;
 		/// Represents the Level currently loaded. This will always be
 		/// ID 0x000001, but this is an easier accessor.
 		/// </summary>
-		public static Level.Level Level {
-			get { return (Level.Level)map[new IdentityNumber(1)]; }
+		public static Geometry.Level Level {
+			get { return (Geometry.Level)map[new IdentityNumber(1)]; }
 			set { map[new IdentityNumber(1)] = value; }
 		}
 
 		static Database() {
 			sprites[0] = new Bundle<Render.Sprite>(MainPackage);
 			tilesprites[0] = new Bundle<Render.Texture>(MainPackage);
-			tiles[0] = new Bundle<Level.Tile>(MainPackage);
+			tiles[0] = new SmallBatch<Geometry.Tile>(MainPackage);
 		}
 
 		/// <summary>
@@ -203,38 +216,9 @@ using Data.Struct;
 			_registered[p] = true;
 		}
 
-		internal static bool AddSprite(Package pack, string key, Render.Sprite sprite) { return sprites[pack].Add(sprite, key); }
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="pack"></param>
-		/// <param name="key"></param>
-		/// <returns></returns>
-		/// <exception cref="UnregisteredSpriteException">If no Sprite is registered under the given Package/Key pair.</exception>
-		/// <exception cref="UnregisteredPackageException">If the given package is not registered.</exception>
-		public static Render.Sprite GetSprite(Package pack, string key) {
-			if(!_registered[pack])
-				throw new UnregisteredPackageException(pack);
-			try { return sprites[pack][key]; }
-			catch(Exception e) { throw new UnregisteredSpriteException(pack, key, e); }
-		}
-		public static Bundle<Render.Sprite> GetSpriteBundle(Package pack) { return sprites[pack]; }
-
-		public static bool AddTexture(Package pack, string key, Render.Texture sprite) { return tilesprites[pack].Add(sprite, key); }
-		public static Render.Texture GetTexture(Package pack, string key) {
-			try {
-				return tilesprites[pack][key];
-			} catch(Exception e) { throw new UnregisteredTileSpriteException(pack, key, e); }
-		}
-		public static Bundle<Render.Texture> GetTextureBundle(Package pack) {
-			if(!_registered[pack])
-				throw new UnregisteredPackageException(pack, null);
-			return tilesprites[pack];
-		}
-
-		public static bool AddTile(Package pack, string key, Level.Tile tile) { return tiles[pack].Add(tile, key); }
-		public static Level.Tile GetTile(Package pack, string key) { return tiles[pack][key]; }
-		public static Bundle<Level.Tile> GetTileBundle(Package pack) { return tiles[pack]; }
+		public static byte AddTile(Package pack, Geometry.Tile tile) { return tiles[pack].Add(tile); }
+		public static Geometry.Tile GetTile(Package pack, byte num) { return tiles[pack][num]; }
+		public static SmallBatch<Geometry.Tile> GetTileBatch(Package pack) { return tiles[pack]; }
 
 	}
 
@@ -247,12 +231,15 @@ using Data.Struct;
 /// see Platformer.Data.Struct.
 /// </summary>
 namespace Platformer.Data {
+using Geometry;
 
 	/// <summary>
 	/// Outlines an entity in the game.
 	/// </summary>
 	public abstract class Entity : Identifiable {
 		public readonly IdentityNumber Identity;
+		public Vector2 Velocity;
+		public Coordinate Location;
 
 		public Entity(IdentityNumber id) { Identity = id; }
 
@@ -267,6 +254,12 @@ namespace Platformer.Data {
 		/// </summary>
 		/// <returns>The IdentityNumber for this Identifiable object.</returns>
 		IdentityNumber GetID();
+
+	}
+
+	public interface ShortIdentifiable {
+
+		ShortIdentity GetID();
 
 	}
 
@@ -309,6 +302,28 @@ namespace Platformer.Data {
 		}
 
 		public static implicit operator uint(IdentityNumber n) { return n.Full; }
+
+		new public string ToString() { return Full.ToString("X"); }
+
+	}
+
+	public struct ShortIdentity {
+		public readonly byte Package;
+		public readonly byte Reference;
+		private ushort Full;
+
+		public ShortIdentity(ushort fullnum) {
+			Full = fullnum;
+			Package = (byte)(fullnum / 0x100);
+			Reference = (byte)(fullnum % 0x100);
+		}
+		public ShortIdentity(byte pack, byte key) {
+			Package = pack;
+			Reference = key;
+			Full = (ushort)((Package * 0x100) + Reference);
+		}
+
+		public static implicit operator ushort(ShortIdentity s) { return s.Full; }
 
 		new public string ToString() { return Full.ToString("X"); }
 
@@ -600,6 +615,33 @@ namespace Platformer.Data.Struct {
 			return true;
 		}
 
+
+	}
+
+	public struct SmallBatch<T> where T : ShortIdentifiable {
+		private T[] _val;
+		public readonly Package Source;
+		private int _index;
+
+		public SmallBatch(Package p) {
+			Source = p;
+			_val = new T[0x100];
+			_index = 0;
+		}
+
+		public T this[byte k] {
+			get { return _val[k]; }
+			private set { _val[k] = value; }
+		}
+
+		public byte Add(T t) {
+			if(_index < 0x100)
+				_val[_index] = t;
+			else
+				throw new ShortBundleOverflowException(Source, _val[0].GetType());
+			return (byte)_index++;
+		}
+
 	}
 
 	public struct Reference<T> where T : Identifiable {
@@ -611,6 +653,12 @@ namespace Platformer.Data.Struct {
 
 	}
 
+	public struct ShortReference<T> where T : ShortIdentifiable {
+		public readonly ShortIdentity Identity;
+
+		public ShortReference(ShortIdentity id) { Identity = id; }
+
+	}
 }
 
 namespace Platformer.Data.IO {

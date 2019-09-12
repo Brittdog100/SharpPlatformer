@@ -225,6 +225,7 @@
     <EmbeddedResource Include="asset\testcontrols.dat" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="asset\level\level0.hex" />
     <None Include="asset\tile\default\ground.dat" />
     <None Include="asset\entity\boomer.edf" />
     <None Include="asset\sprite\boomer.ssf" />

@@ -154,9 +154,18 @@ using Data.Struct;
 		public abstract IdentityNumber GetID();
 	}
 
-	public class LinearBehavior {//: Behavior {
+	public class LinearBehavior : Behavior {
 
+		public LinearBehavior(Reference<Entity> reference) : base(reference) {
+			ShouldMove = true;
+			MoveDirection = Direction.LEFT;
+		}
 
+		public override void Query() { }
+		public override void Move() {
+			
+		}
+		public override IdentityNumber GetID() { return Target.Identity; }
 
 	}
 
