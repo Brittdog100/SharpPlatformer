@@ -233,20 +233,6 @@ using Data.Struct;
 namespace Platformer.Data {
 using Geometry;
 
-	/// <summary>
-	/// Outlines an entity in the game.
-	/// </summary>
-	public abstract class Entity : Identifiable {
-		public readonly IdentityNumber Identity;
-		public Vector2 Velocity;
-		public Coordinate Location;
-
-		public Entity(IdentityNumber id) { Identity = id; }
-
-		public IdentityNumber GetID() { return Identity; }
-
-	}
-
 	public interface Identifiable {
 
 		/// <summary>
@@ -638,7 +624,7 @@ namespace Platformer.Data.Struct {
 			if(_index < 0x100)
 				_val[_index] = t;
 			else
-				throw new ShortBundleOverflowException(Source, _val[0].GetType());
+				throw new SmallBatchOverflowException(Source, _val[0].GetType());
 			return (byte)_index++;
 		}
 

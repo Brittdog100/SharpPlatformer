@@ -4,19 +4,49 @@ using Microsoft.Graphics.Canvas;
 using Windows.Foundation;
 
 using Platformer.Data;
+using Platformer.Geometry;
 using Platformer.Render;
 
 namespace Platformer.Object {
+
+	/// <summary>
+	/// Outlines an entity in the game.
+	/// </summary>
+	public abstract class Entity : Identifiable {
+		public readonly IdentityNumber Identity;
+		public Vector2 Velocity;
+		protected BoundingBox boundingbox;
+		public Coordinate Position {
+			get { return new Coordinate(boundingbox.X, boundingbox.Y); }
+			set {
+				boundingbox.X = value.X;
+				boundingbox.Y = value.Y;
+			}
+		}
+		public double X {
+			get { return Position.X; }
+			set { boundingbox.X = value; }
+		}
+		public double Y {
+			get { return Position.Y; }
+			set { boundingbox.Y = value; }
+		}
+
+		public Entity(IdentityNumber id) { Identity = id; }
+
+		public void DoVelocity() { Position += Velocity; }
+
+		public IdentityNumber GetID() { return Identity; }
+
+		public abstract void Render(CanvasDrawingSession session);
+
+	}
 
 	/// <summary>
 	/// Represents a player-controlled entity.
 	/// </summary>
 	public sealed class Player : Entity, Directional, Identifiable {
 		private SpriteSheet sprites;
-		/// <summary>
-		/// The velocity of this entity to be used in the next physics
-		/// calculation.
-		/// </summary>
 		private bool _dir = false;
 		public bool Facing {
 			get { return _dir; }
@@ -26,22 +56,6 @@ namespace Platformer.Object {
 				_dir = value;
 				sprites.Reverse = _dir;
 			}
-		}
-		private Rect boundingbox;
-		public Point Position {
-			get { return new Point(boundingbox.X,boundingbox.Y); }
-			set {
-				boundingbox.X = value.X;
-				boundingbox.Y = value.Y;
-			}
-		}
-		public double X {
-			get { return Position.X; }
-			set { Position = new Point(value,Position.Y); }
-		}
-		public double Y {
-			get { return Position.Y; }
-			set { Position = new Point(Position.X, value); }
 		}
 		private byte _state = 0;
 		public byte State {
@@ -58,26 +72,15 @@ namespace Platformer.Object {
 
 		public Player(SpriteSheet sheet) : base(new IdentityNumber(0)){
 			sprites = sheet;
-			boundingbox = new Rect(new Point(0,0),new Point(32,48));
+			boundingbox = new BoundingBox(0, 0, 32, 48);
 		}
 
 		public Direction GetFacing() { return _dir ? Direction.LEFT : Direction.RIGHT; }
 
-		public void DoVelocity() { Position = new Point(X + Velocity.X, Y + Velocity.Y); }
-
-		public void Render(CanvasDrawingSession session) { session.DrawImage(sprites, boundingbox); }
+		public override void Render(CanvasDrawingSession session) { session.DrawImage(sprites, boundingbox); }
 
 		public static implicit operator SpriteSheet(Player p) { return p.sprites; }
 
 	}
-
-	/*public class ScriptedEntity : Entity, Directional {
-		private SpriteSheet sprites;
-		public Vector2 Velocity { get; private set; }
-		private Direction dir;
-
-	public Direction GetFacing() { return dir; }
-
-	}*/
 
 }

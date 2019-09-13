@@ -100,12 +100,12 @@ namespace Platformer.Error {
 
 	}
 
-	public class ShortBundleOverflowException : Exception {
+	public class SmallBatchOverflowException : Exception {
 		public readonly Package Package;
 		public readonly Type Type;
 
-		public ShortBundleOverflowException(Package pack, Type type) : this(pack, type, null) { }
-		public ShortBundleOverflowException(Package pack, Type type, Exception inner)
+		public SmallBatchOverflowException(Package pack, Type type) : this(pack, type, null) { }
+		public SmallBatchOverflowException(Package pack, Type type, Exception inner)
 		: base("Package " + pack.Name + "'s " + type.ToString() + " shortbundle is already full!", inner) {
 			Package = pack;
 			Type = type;

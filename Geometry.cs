@@ -31,13 +31,39 @@ namespace Platformer.Geometry {
 
 	}
 
+	public struct BoundingBox {
+		public double X, Y, Width, Height;
+
+			public BoundingBox(double x, double y, double w, double h) {
+				X = x;
+				Y = y;
+				Width = w;
+				Height = h;
+			}
+			public BoundingBox(Coordinate o, double w, double h) : this(o.X, o.Y, w, h) { }
+			public BoundingBox(Coordinate o, Vector2 s) : this(o.X, o.Y, s.X, s.Y) { }
+
+			public bool Contains(Coordinate p) {
+				return ((p.X > X) && (p.X < (X + Width))) && ((p.Y > Y) && (p.Y < (Y + Height)));
+			}
+
+			public static BoundingBox operator +(BoundingBox b, Vector2 t) { return new BoundingBox(b.X + t.X, b.Y + t.Y, b.Width, b.Height); }
+			public static BoundingBox operator *(BoundingBox b, double m) { return new BoundingBox(b.X, b.Y, b.Width * m, b.Height * m); }
+			public static BoundingBox operator *(BoundingBox b, float m) { return new BoundingBox(b.X, b.Y, b.Width * m, b.Height * m); }
+			public static BoundingBox operator *(BoundingBox b, Vector2 m) { return new BoundingBox(b.X, b.Y, b.Width * m.X, b.Height * m.Y); }
+
+			public static implicit operator Rect(BoundingBox b) { return new Rect(b.X, b.Y, b.Width, b.Height); }
+
+	}
+
 	public enum TileBehavior {
 		EMPTY = 0,
 		COLLIDE = 0b1,
 		SLOW = 0b10,
 		BOUNCE = 0b100,
 		SWIM = 0b1000,
-		DAMAGE = 0b1_0000
+		DAMAGE = 0b1_0000,
+		FAST = 0b10_0000
 	}
 
 	public class Tile : ShortIdentifiable {
@@ -45,6 +71,9 @@ namespace Platformer.Geometry {
 		public TileBehavior Behavior { get; private set; }
 		public readonly ShortIdentity Identity;
 
+		/// <summary>
+		/// This might look weird, but this creates an air tile.
+		/// </summary>
 		internal Tile() { Identity = new ShortIdentity(0); }
 		public Tile(TextureReference img, ShortIdentity id) {
 			imgref = img;

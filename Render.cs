@@ -45,9 +45,10 @@ using Geometry;
 	}
 
 	public static partial class Database {
-		private static Bundle<Sprite>[] sprites = new Bundle<Render.Sprite>[0x100];
+		private static Bundle<Sprite>[] sprites = new Bundle<Sprite>[0x100];
 		private static Bundle<Texture>[] tilesprites = new Bundle<Texture>[0x100];
 		internal static Coordinate Camera = new Coordinate(0, 0);
+		public static float RenderScale = 2.0f;
 
 		/// <summary>
 		/// Registers a sprite.
@@ -77,11 +78,10 @@ using Geometry;
 		/// <returns>A bundle with all of the sprites registered under the given package.</returns>
 		public static Bundle<Sprite> GetSpriteBundle(Package pack) { return sprites[pack]; }
 
-		public static bool AddTexture(Package pack, string key, Texture sprite) { return tilesprites[pack].Add(sprite, key); }
+		public static bool AddTexture(Package pack, string key, Texture texture) { return tilesprites[pack].Add(texture, key); }
 		public static Texture GetTexture(Package pack, string key) {
-			try {
-				return tilesprites[pack][key];
-			} catch(Exception e) { throw new UnregisteredTextureException(pack, key, e); }
+			try { return tilesprites[pack][key]; }
+			catch(Exception e) { throw new UnregisteredTextureException(pack, key, e); }
 		}
 		public static Bundle<Texture> GetTextureBundle(Package pack) {
 			if(!_registered[pack])
