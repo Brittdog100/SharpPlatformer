@@ -141,6 +141,7 @@ namespace Platformer.Input {
 namespace Platformer.Logic {
 using Data;
 using Data.Struct;
+using Object;
 
 	public abstract class Behavior : Identifiable {
 		protected bool ShouldMove;
