@@ -9,7 +9,6 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
 
 using Windows.Storage;
-using Windows.Foundation;
 
 using Platformer.Error;
 
@@ -214,24 +213,25 @@ using Data.Struct;
 				throw new PackageOverrideException(p.Identifier);
 			_package[p.Name] = p;
 			_registered[p] = true;
+			sprites[p] = new Bundle<Render.Sprite>();
+			tiles[p] = new SmallBatch<Geometry.Tile>();
+			tiles[p].Add(new Geometry.Tile());
+			tilesprites[p] = new Bundle<Render.Texture>();
 		}
 
 		public static byte AddTile(Package pack, Geometry.Tile tile) { return tiles[pack].Add(tile); }
-		public static Geometry.Tile GetTile(Package pack, byte num) { return tiles[pack][num]; }
+		public static Geometry.Tile GetTile(Package pack, byte num) {
+			if(num == 0)
+				return tiles[0][0];
+			return tiles[pack][num];
+		}
 		public static SmallBatch<Geometry.Tile> GetTileBatch(Package pack) { return tiles[pack]; }
 
 	}
 
 }
 
-/// <summary>
-/// Contains classes used in the Database, such as the
-/// Entity and IdentityNumber classes, the Identifiable
-/// interface, and the ResourceManager. For data structures,
-/// see Platformer.Data.Struct.
-/// </summary>
 namespace Platformer.Data {
-using Geometry;
 
 	public interface Identifiable {
 
@@ -423,9 +423,6 @@ using Geometry;
 
 }
 
-/// <summary>
-/// Contains data structures used in the game.
-/// </summary>
 namespace Platformer.Data.Struct {
 
 	/// <summary>
@@ -648,6 +645,7 @@ namespace Platformer.Data.Struct {
 }
 
 namespace Platformer.Data.IO {
+using Geometry;
 using Render;
 using Struct;
 
@@ -712,12 +710,12 @@ using Struct;
 			("file", typeof(AppDataFile)),
 			("float", typeof(float)),
 			("int", typeof(int)),
-			("point", typeof(Point)),
-			("rect", typeof(Rect)),
+			("point", typeof(Coordinate)),
+			("rect", typeof(BoundingBox)),
 			("sheet", typeof(SpriteSheet)),
 			("sprite", typeof(SpriteReference)),
 			("str", typeof(string)),
-			("texture", typeof(Texture)),
+			("texture", typeof(TextureReference)),
 			("vec", typeof(Vector2))
 		);
 
@@ -738,7 +736,7 @@ using Struct;
 		}
 
 		public RawProperty this[string name] {
-			get { WriteLine("getting property named " + name); return props[name]; }
+			get { return props[name]; }
 			set {
 				if(finalized)
 					return;
@@ -788,10 +786,10 @@ using Struct;
 			case "int" : return int.Parse(prop.Data);
 			case "point" :
 				string[] point = prop.Data.Split(',');
-				return new Point(double.Parse(point[0]), double.Parse(point[1]));
+				return new Coordinate(double.Parse(point[0]), double.Parse(point[1]));
 			case "rect" :
 				string[] rect = prop.Data.Split(',');
-				return new Rect(0,0,double.Parse(rect[0]), double.Parse(rect[1]));
+				return new BoundingBox(0,0,double.Parse(rect[0]), double.Parse(rect[1]));
 			case "sheet" : return new SpriteSheet(new DataMap(new AppDataFile(prop.Data)));
 			case "sprite" :
 				string[] sprite = prop.Data.Split(':');
@@ -826,13 +824,14 @@ using Struct;
 			case "float" : return ((float)o).ToString();
 			case "int" : return ((int)o).ToString();
 			case "point" :
-				Point point = (Point)o;
+				Coordinate point = (Coordinate)o;
 				return (point.X + "," + point.Y);
 			case "rect" :
-				Rect rect = (Rect)o;
+				BoundingBox rect = (BoundingBox)o;
 				return (rect.Width + "," + rect.Height);
 			case "sprite" : return ((SpriteReference)o).ToString();
 			case "str" : return (o as string);
+			case "texture" : return ((TextureReference)o).ToString();
 			case "vec" :
 				Vector2 vector = (Vector2)o;
 				return (vector.X + "," + vector.Y);

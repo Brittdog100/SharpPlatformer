@@ -8,6 +8,7 @@ using Platformer.Geometry;
 using Platformer.Render;
 
 namespace Platformer.Object {
+using Data.IO;
 
 	/// <summary>
 	/// Outlines an entity in the game.
@@ -43,7 +44,7 @@ namespace Platformer.Object {
 	}
 
 	/// <summary>
-	/// Represents a player-controlled entity.
+	/// Represents the player-controlled entity.
 	/// </summary>
 	public sealed class Player : Entity, Directional, Identifiable {
 		private SpriteSheet sprites;
@@ -70,6 +71,7 @@ namespace Platformer.Object {
 		public double Height { get { return boundingbox.Height; } }
 		public double Width { get { return boundingbox.Width; } }
 
+		private Player() : base(new IdentityNumber(0)) { }
 		public Player(SpriteSheet sheet) : base(new IdentityNumber(0)){
 			sprites = sheet;
 			boundingbox = new BoundingBox(0, 0, 32, 48);
@@ -78,6 +80,13 @@ namespace Platformer.Object {
 		public Direction GetFacing() { return _dir ? Direction.LEFT : Direction.RIGHT; }
 
 		public override void Render(CanvasDrawingSession session) { session.DrawImage(sprites, boundingbox); }
+
+		public static Player FromDataMap(DataMap map) {
+			Player output = new Player();
+			output.boundingbox = (BoundingBox)map["bounds"].Data;
+			output.sprites = (SpriteSheet)map["sprites"].Data;
+			return output;
+		}
 
 		public static implicit operator SpriteSheet(Player p) { return p.sprites; }
 

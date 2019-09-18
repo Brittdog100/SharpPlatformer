@@ -72,7 +72,8 @@ namespace Platformer.Geometry {
 		public readonly ShortIdentity Identity;
 
 		/// <summary>
-		/// This might look weird, but this creates an air tile.
+		/// This might look weird, but this creates an air tile. It's worth mentioning that
+		/// the 0 tile is reserved for air, and you don't need to initialize an air tile for your package either.
 		/// </summary>
 		internal Tile() { Identity = new ShortIdentity(0); }
 		public Tile(TextureReference img, ShortIdentity id) {
