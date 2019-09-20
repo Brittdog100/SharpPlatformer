@@ -1,1 +1,2 @@
-﻿str path asset\texture\default\ground.png
+﻿texture image 0:ground
+int behavior 1

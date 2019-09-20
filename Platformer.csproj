@@ -188,6 +188,8 @@
     <Content Include="asset\sprite\test\wall\slide7.png" />
     <Content Include="asset\sprite\test\wall\slide8.png" />
     <Content Include="asset\sprite\test\wall\slide9.png" />
+    <EmbeddedResource Include="asset\texture\default\ground.png" />
+    <EmbeddedResource Include="asset\texture\default\grass.png" />
     <Content Include="Properties\Default.rd.xml" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" />
     <Content Include="Assets\SplashScreen.scale-200.png" />
@@ -229,6 +231,7 @@
     <EmbeddedResource Include="asset\tile\default\ground.dat" />
     <None Include="asset\entity\boomer.edf" />
     <None Include="asset\sprite\boomer.ssf" />
+    <EmbeddedResource Include="asset\tile\default\grass.dat" />
   </ItemGroup>
   <ItemGroup />
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">

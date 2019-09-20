@@ -36,6 +36,11 @@ using Data.Struct;
 			CreatingTiles += CreateCoreTiles;
 		}
 
+		public static async Task CreateGraphics(ICanvasAnimatedControl sender) {
+			await CreateSprites(sender);
+			await CreateTextures(sender);
+		}
+
 		public static async Task CreateSprites(ICanvasAnimatedControl sender) {
 			if(_spritesmade)
 				return;
@@ -63,31 +68,38 @@ using Data.Struct;
 
 		private async static Task CreateCoreSprites(ICanvasAnimatedControl sender) {
 			WriteLine("starting sprite prep");
-			await ResourceManager.LoadSprite(sender, Database.MainPackage, @"asset\sprite\test\idle.sdf");
-			await ResourceManager.LoadSprite(sender, Database.MainPackage, @"asset\sprite\test\walk.sdf");
-			await ResourceManager.LoadSprite(sender, Database.MainPackage, @"asset\sprite\test\run.sdf");
-			await ResourceManager.LoadSprite(sender, Database.MainPackage, @"asset\sprite\test\fall.sdf");
+			await ResourceManager.LoadSprite(sender, Core.MainPackage, @"asset\sprite\test\idle.sdf");
+			await ResourceManager.LoadSprite(sender, Core.MainPackage, @"asset\sprite\test\walk.sdf");
+			await ResourceManager.LoadSprite(sender, Core.MainPackage, @"asset\sprite\test\run.sdf");
+			await ResourceManager.LoadSprite(sender, Core.MainPackage, @"asset\sprite\test\fall.sdf");
 			WriteLine("finished sprite prep");
 		}
 		private static void CreateCoreSpriteSheets() {
-			
+			//TODO
 		}
 
 		private async static Task CreateCoreTextures(ICanvasAnimatedControl sender) {
 			WriteLine("starting texture prep");
-			await ResourceManager.LoadTexture(sender, Database.MainPackage, @"asset\texture\default\ground.png", "ground");
+			await ResourceManager.LoadTexture(sender, Core.MainPackage, @"asset\texture\default\ground.png", "ground");
+			await ResourceManager.LoadTexture(sender, Core.MainPackage, @"asset\texture\default\grass.png", "grass");
 			WriteLine("finished texture prep");
 		}
 
 		private static void CreateCoreTiles() {
 			WriteLine("starting tile creation");
-			Database.AddTile(Database.MainPackage, new Geometry.Tile());
+			//Tile order is important, since the order they are declared affects their index in tileset binaries.
+			Core.AddTile(Core.MainPackage, Geometry.Tile.FromDataMap(new Data.IO.DataMap(Core.MainPackage, new Data.IO.AppDataFile(@"asset\tile\default\ground.dat"))));
+			Core.AddTile(Core.MainPackage, Geometry.Tile.FromDataMap(new Data.IO.DataMap(Core.MainPackage, new Data.IO.AppDataFile(@"asset\tile\default\grass.dat"))));
 			WriteLine("finished tile creation");
 		}
 
 		public static void PreparePlayer() {
 			//TODO
-			Database.Player = new Object.Player(new Render.SpriteSheet(new Data.IO.DataMap(Database.MainPackage, new Data.IO.AppDataFile(@"asset\sprite\testplayer.ssf"))));
+			/**	This is going to be a little odd, but I'm going to move the burden of loading the player onto
+			 *	the Package struct somehow. I might accomplish this by adding a definition for the player
+			 *	object's DataMap into the package definition, but I'm still not particularly sure for now.
+			 */
+			Core.Player = new Object.Player(new Render.SpriteSheet(new Data.IO.DataMap(Core.MainPackage, new Data.IO.AppDataFile(@"asset\sprite\testplayer.ssf"))));
 		}
 
 	}
@@ -95,16 +107,16 @@ using Data.Struct;
 	/// <summary>
 	/// This class is used to store game objects and general data storage.
 	/// </summary>
-	public static partial class Database {
+	public static partial class Core {
 		private static IdentityMap map = new IdentityMap();
-		private static byte _nextpackage = 0;
+		private static byte _nextpackage = 1;
 		private static Package[] _pack = new Package[0x100];
 		private static bool[] _registered = new bool[0x100];
 		private static Dictionary<string,Package> _package = new Dictionary<string, Package>();
 		/// <summary>
 		/// The Package containing all of the objects created by the main game.
 		/// </summary>
-		public static readonly Package MainPackage = CreatePackage("core");
+		public static readonly Package MainPackage = new Package("core",0);
 		private static SmallBatch<Geometry.Tile>[] tiles = new SmallBatch<Geometry.Tile>[0x100];
 		public static readonly Random rng = new Random();
 		/// <summary>
@@ -124,10 +136,13 @@ using Data.Struct;
 			set { map[new IdentityNumber(1)] = value; }
 		}
 
-		static Database() {
+		static Core() {
+			_pack[0] = MainPackage;
+			_registered[0] = true;
 			sprites[0] = new Bundle<Render.Sprite>(MainPackage);
-			tilesprites[0] = new Bundle<Render.Texture>(MainPackage);
+			textures[0] = new Bundle<Render.Texture>(MainPackage);
 			tiles[0] = new SmallBatch<Geometry.Tile>(MainPackage);
+			_package.Add("core", MainPackage);
 		}
 
 		/// <summary>
@@ -162,28 +177,49 @@ using Data.Struct;
 			return map[id];
 		}
 		/// <summary>
+		/// Adds an identifiable object to the active "scene." Please note that the object's
+		/// identity may change based on which identities are available, and these new IDs are
+		/// randomly generated.
+		/// </summary>
+		/// <param name="o">The object to add.</param>
+		/// <returns>The IdentityNumber that the added object was registered with.</returns>
+		public static IdentityNumber Add(Identifiable o) {
+			IdentityNumber id = o.GetID();
+			if(map.Has(id)) {
+				o.SetID(map.Random((Package)id.Package));
+				id = o.GetID();
+			}
+			WriteLine("assigning to id " + id);
+			map[id] = o;
+			return id;
+		}
+		public static void Set(Identifiable obj, IdentityNumber id) {
+			if(id == 0 && !(obj is Object.Player))
+				throw new IdentityOverrideException(id);
+			Release(id);
+			obj.SetID(id);
+			map[id] = obj;
+		}
+		/// <summary>
 		/// Releases an ID and removes its object from the Database.
 		/// </summary>
 		/// <param name="id">The ID to release.</param>
 		/// <returns><code>True</code> if the ID was released successfully,
 		/// <code>False</code> otherwise.
 		/// </returns>
-		/// <exception cref="UnregisteredObjectException">If no object is found
-		/// at the specified ID.
-		/// </exception>
 		/// <exception cref="UnregisteredPackageException">If the package specified
 		/// by the ID is not registered.
 		/// </exception>
 		public static bool Release(IdentityNumber id) {
 			WriteLine("release id " + id.ToString());
-			//You know, this probably shouldn't throw exceptions but uh
-			if(!map.Has(id))
-				throw GetNumError(id);
+			if(!_registered[id.Package])
+				throw new UnregisteredPackageException(id.Package);
 			return map.Release(id);
 		}
+		public static bool Release(Identifiable o) { return Release(o.GetID()); }
 
 		/// <summary>
-		/// Creates a new package with the given name.
+		/// Creates and registers a new package with the given name.
 		/// </summary>
 		/// <param name="name">The desired package name.</param>
 		/// <returns>A registered package with the provided name.</returns>
@@ -216,10 +252,16 @@ using Data.Struct;
 			sprites[p] = new Bundle<Render.Sprite>();
 			tiles[p] = new SmallBatch<Geometry.Tile>();
 			tiles[p].Add(new Geometry.Tile());
-			tilesprites[p] = new Bundle<Render.Texture>();
+			textures[p] = new Bundle<Render.Texture>();
 		}
 
-		public static byte AddTile(Package pack, Geometry.Tile tile) { return tiles[pack].Add(tile); }
+		public static byte AddTile(Package pack, Geometry.Tile tile) {
+			byte output = tiles[pack].Add(tile);
+			ShortIdentity id = new ShortIdentity(pack, output);
+			tiles[pack][output].SetID(id);
+			WriteLine(tile.Identity);
+			return output;
+		}
 		public static Geometry.Tile GetTile(Package pack, byte num) {
 			if(num == 0)
 				return tiles[0][0];
@@ -240,13 +282,14 @@ namespace Platformer.Data {
 		/// </summary>
 		/// <returns>The IdentityNumber for this Identifiable object.</returns>
 		IdentityNumber GetID();
+		void SetID(IdentityNumber newIdentity);
 
 	}
 
 	public interface ShortIdentifiable {
 
 		ShortIdentity GetID();
-
+		
 	}
 
 	public enum Direction {
@@ -407,14 +450,14 @@ namespace Platformer.Data {
 					map.Add(new IO.RawProperty("rframe" + n, typeof(void), await CanvasBitmap.LoadAsync(sender, AppDataPath(ft + n + "L.png"))));
 			string key = (string)map["key"].Data;
 			Render.Sprite output = Render.Sprite.FromDataMap(map);
-			if(Database.AddSprite(pack, key, output))
+			if(Core.AddSprite(pack, key, output))
 				return output;
 			else return null;
 		}
 		public static async Task<Render.Texture> LoadTexture(ICanvasAnimatedControl sender, Struct.Package pack, string path, string key) {
-			var img = await CanvasBitmap.LoadAsync(sender, path);
+			var img = await CanvasBitmap.LoadAsync(sender, AppDataPath(path));
 			var output = new Render.Texture(img);
-			if(Database.AddTexture(pack, key, output))
+			if(Core.AddTexture(pack, key, output))
 				return output;
 			else return null;
 		}
@@ -458,6 +501,7 @@ namespace Platformer.Data.Struct {
 		/// <returns><code>True</code> if the <code>IdentityNumber</code> was successfully removed, <code>False</code> otherwise.</returns>
 		internal bool Release(IdentityNumber n) { return dict.Remove(n); }
 
+
 		/// <summary>
 		/// This is an internal method so it doesn't really do
 		/// a lot for me to document, except that I'm trying to
@@ -469,20 +513,20 @@ namespace Platformer.Data.Struct {
 		/// <returns>An <code>IdentityNumber</code> not used in this <code>IdentityMap</code>.</returns>
 		internal IdentityNumber Random(Package p) {
 			uint output;
-			do output = (uint)Database.rng.Next(0xFFFF);
+			do output = (uint)Core.rng.Next(0x10000);
 			while(Has(new IdentityNumber(p, output)));
-			return new IdentityNumber(p.Identifier, output);
+			return new IdentityNumber(p, output);
 		}
 
 	}
 
 	/// <summary>
 	/// Represents the extension that is responsible for an identifiable object.
-	/// These are dispensed via <code cref="Database.CreatePackage(string)">CreatePackage</code>
+	/// These are dispensed via <code cref="Core.CreatePackage(string)">CreatePackage</code>
 	/// method in the <code>Database</code> class.
 	/// </summary>
-	/// <seealso cref="Database.GetPackage(byte)"/>
-	/// <seealso cref="Database.GetPackage(string)"/>
+	/// <seealso cref="Core.GetPackage(byte)"/>
+	/// <seealso cref="Core.GetPackage(string)"/>
 	/// <seealso cref="IdentityNumber"/>
 	public struct Package {
 		/// <summary>
@@ -496,11 +540,16 @@ namespace Platformer.Data.Struct {
 		public readonly string Name;
 
 		internal Package(string name) {
-			Identifier = Database.GetPackageNumber();
+			Identifier = Core.GetPackageNumber();
 			Name = name;
+		}
+		internal Package(string name, byte num) {
+			Name = name;
+			Identifier = num;
 		}
 
 		public static implicit operator byte(Package p) { return p.Identifier; }
+		public static explicit operator Package(byte b) { return Core.GetPackage(b); }
 
 	}
 
@@ -632,7 +681,7 @@ namespace Platformer.Data.Struct {
 
 		public Reference(IdentityNumber id) { Identity = id; }
 
-		public static implicit operator T(Reference<T> r) { return (T)Database.Get(r.Identity); }
+		public static implicit operator T(Reference<T> r) { return (T)Core.Get(r.Identity); }
 
 	}
 
@@ -802,8 +851,8 @@ using Struct;
 				string[] texture = prop.Data.Split(':');
 				byte texpacknum;
 				if(byte.TryParse(texture[0], out texpacknum))
-					return new TextureReference(Database.GetPackage(texpacknum), texture[1]);
-				else return new TextureReference(Database.GetPackage(texture[0]), texture[1]);
+					return new TextureReference(Core.GetPackage(texpacknum), texture[1]);
+				else return new TextureReference(Core.GetPackage(texture[0]), texture[1]);
 			case "vec" :
 				string[] vec = prop.Data.Split(',');
 				return new Vector2(float.Parse(vec[0]), float.Parse(vec[1]));
@@ -837,6 +886,15 @@ using Struct;
 				return (vector.X + "," + vector.Y);
 			}
 			return null;
+		}
+
+		public static void CheckForSet(DataMap map, params string[] props) {
+			List<string> missing = new List<string>();
+			foreach(string p in props)
+				if(!map.Has(p))
+					missing.Add(p);
+			if(missing.Count > 0)
+				throw new MissingPropertyException(missing.ToArray());
 		}
 
 	}	

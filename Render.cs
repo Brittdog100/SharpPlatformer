@@ -24,9 +24,12 @@ using Geometry;
 	public sealed partial class MainPage : Page {
 
 		void canvas_CreateResources(ICanvasAnimatedControl sender,CanvasCreateResourcesEventArgs args) {
-			//Create all sprites.
-			args.TrackAsyncAction(Initialization.CreateSprites(sender).AsAsyncAction());
+			//Create all sprites and textures.
+			args.TrackAsyncAction(Initialization.CreateGraphics(sender).AsAsyncAction());
+			//Create all spritesheets
 			Initialization.CreateSheets();
+			//Create all tiles
+			Initialization.CreateTiles();
 			//Create the player object, however that's decided.
 			Initialization.PreparePlayer();
 		}
@@ -34,19 +37,19 @@ using Geometry;
 		void canvas_DrawAnimated(ICanvasAnimatedControl sender, CanvasAnimatedDrawEventArgs args) {
 			//TODO: rendering code here
 			Input.Logic.Flow();
-			Database.Player.Render(args.DrawingSession);
+			Core.Player.Render(args.DrawingSession);
 			args.DrawingSession.DrawLine(new Vector2(0,floor),new Vector2(10000,floor),Color.FromArgb(255,0,0,0));
 		}
 
 		internal void setBackground(Brush b) { Background = b; }
 
-		public static Coordinate GetRelative(Coordinate c) { return c - Database.Camera; }
+		public static Coordinate GetRelative(Coordinate c) { return c - Core.Camera; }
 
 	}
 
-	public static partial class Database {
+	public static partial class Core {
 		private static Bundle<Sprite>[] sprites = new Bundle<Sprite>[0x100];
-		private static Bundle<Texture>[] tilesprites = new Bundle<Texture>[0x100];
+		private static Bundle<Texture>[] textures = new Bundle<Texture>[0x100];
 		internal static Coordinate Camera = new Coordinate(0, 0);
 		public static float RenderScale = 2.0f;
 
@@ -78,15 +81,15 @@ using Geometry;
 		/// <returns>A bundle with all of the sprites registered under the given package.</returns>
 		public static Bundle<Sprite> GetSpriteBundle(Package pack) { return sprites[pack]; }
 
-		public static bool AddTexture(Package pack, string key, Texture texture) { return tilesprites[pack].Add(texture, key); }
+		public static bool AddTexture(Package pack, string key, Texture texture) { return textures[pack].Add(texture, key); }
 		public static Texture GetTexture(Package pack, string key) {
-			try { return tilesprites[pack][key]; }
+			try { return textures[pack][key]; }
 			catch(Exception e) { throw new UnregisteredTextureException(pack, key, e); }
 		}
 		public static Bundle<Texture> GetTextureBundle(Package pack) {
 			if(!_registered[pack])
 				throw new UnregisteredPackageException(pack, null);
-			return tilesprites[pack];
+			return textures[pack];
 		}
 
 	}
@@ -96,18 +99,6 @@ using Geometry;
 namespace Platformer.Render {
 using Microsoft.Graphics.Canvas.Effects;
 using Data.IO;
-
-	public static class Effects {
-		private static Transform2DEffect VerticalMirror = new Transform2DEffect() {
-			TransformMatrix = new Matrix3x2(-1, 0, 0, 1, 0, 0)
-		};
-
-		public static void MirrorVertical(CanvasBitmap img) {
-			throw new NotImplementedException();
-			//VerticalMirror.Source = img;
-		}
-
-	}
 
 	public class Texture {
 		private CanvasBitmap image;
@@ -318,14 +309,14 @@ using Data.IO;
 		public readonly Data.Struct.Package Package;
 		public readonly string Key;
 
-		public SpriteReference(string p, string k) : this(Database.GetPackage(p), k) { }
-		public SpriteReference(byte p, string k) : this(Database.GetPackage(p), k) { }
+		public SpriteReference(string p, string k) : this(Core.GetPackage(p), k) { }
+		public SpriteReference(byte p, string k) : this(Core.GetPackage(p), k) { }
 		public SpriteReference(Data.Struct.Package p, string k) {
 			Package = p;
 			Key = k;
 		}
 
-		public Sprite ToSprite() { return Database.GetSprite(Package, Key); }
+		public Sprite ToSprite() { return Core.GetSprite(Package, Key); }
 		new public string ToString() { return (Package.Identifier + ":" + Key); }
 
 	}
@@ -343,7 +334,7 @@ using Data.IO;
 			Key = k;
 		}
 
-		public Texture ToTexture() { return Database.GetTexture(Package, Key); }
+		public Texture ToTexture() { return Core.GetTexture(Package, Key); }
 		new public string ToString() { return (Package.Identifier + ":" + Key); }
 
 	}

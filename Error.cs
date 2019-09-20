@@ -44,6 +44,14 @@ namespace Platformer.Error {
 
 	}
 
+	public class IdentityOverrideException : Exception {
+		public readonly IdentityNumber Identity;
+	
+		public IdentityOverrideException(IdentityNumber id) : this(id, null) { }
+		public IdentityOverrideException(IdentityNumber id, Exception inner)
+		: base("Attempted to assign to the already occupied identity " + id, inner) { Identity = id; }
+	}
+
 	/// <summary>
 	/// Thrown when attempting to assign a package to an occupied slot.
 	/// </summary>
@@ -100,6 +108,14 @@ namespace Platformer.Error {
 
 	}
 
+	public class ImmutableIdentityException : Exception {
+		public readonly Type Type;
+
+		public ImmutableIdentityException(Type t) : this(t, null) { }
+		public ImmutableIdentityException(Type t, Exception inner)
+		: base("Cannot reassign the identity of type " + t.Name, inner) { }
+	}
+
 	public class SmallBatchOverflowException : Exception {
 		public readonly Package Package;
 		public readonly Type Type;
@@ -117,6 +133,20 @@ namespace Platformer.Error {
 
 		public LockedMapException() : this(null) { }
 		public LockedMapException(Exception inner) : base("The given DataMap is locked", inner) { }
+
+	}
+
+	public class MissingPropertyException : Exception {
+
+		public MissingPropertyException(string[] props) : this(props, null) { }
+		public MissingPropertyException(string[] props, Exception inner) : base(ErrorMessage(props), inner) { }
+
+		private static string ErrorMessage(string[] p) {
+			string tmp = "";
+			foreach(string s in p)
+				tmp += " " + p;
+			return ("DataMap is missing the following properties:" + tmp);
+		}
 
 	}
 

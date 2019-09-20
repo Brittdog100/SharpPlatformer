@@ -7,6 +7,7 @@ using Windows.Foundation;
 using Platformer.Data;
 using Platformer.Data.IO;
 using Platformer.Data.Struct;
+using Platformer.Error;
 using Platformer.Render;
 
 namespace Platformer.Geometry {
@@ -69,25 +70,36 @@ namespace Platformer.Geometry {
 	public class Tile : ShortIdentifiable {
 		private TextureReference imgref;
 		public TileBehavior Behavior { get; private set; }
-		public readonly ShortIdentity Identity;
+		public ShortIdentity Identity { get; internal set; }
 
 		/// <summary>
 		/// This might look weird, but this creates an air tile. It's worth mentioning that
 		/// the 0 tile is reserved for air, and you don't need to initialize an air tile for your package either.
 		/// </summary>
 		internal Tile() { Identity = new ShortIdentity(0); }
-		public Tile(TextureReference img, ShortIdentity id) {
+		public Tile(TextureReference img) {
 			imgref = img;
 			Behavior = 0;
-			Identity = id;
 		}
-		public Tile(TextureReference img, TileBehavior behavior, ShortIdentity id) {
+		public Tile(TextureReference img, TileBehavior behavior) {
 			imgref = img;
 			Behavior = behavior;
-			Identity = id;
 		}
 
 		public ShortIdentity GetID() { return Identity; }
+		internal void SetID(ShortIdentity newIdentity) { Identity = newIdentity; }
+
+		public static Tile FromDataMap(DataMap map) {
+			DataMap.CheckForSet(map, "image", "behavior");
+			Tile output = new Tile();
+			Console.WriteLine("getting image");
+			output.imgref = (TextureReference)map["image"].Data;
+			Console.WriteLine("getting behavior");
+			output.Behavior = (TileBehavior)(int)map["behavior"].Data;
+			Console.WriteLine("assigning id");
+			Core.AddTile(map.Package, output);
+			return output;
+		}
 
 		public static implicit operator CanvasBitmap(Tile t) { return t.imgref.ToTexture(); }
 
@@ -107,12 +119,13 @@ namespace Platformer.Geometry {
 		}
 
 		public IdentityNumber GetID() { return new IdentityNumber(1); }
+		public void SetID(IdentityNumber newIdentity) { throw new ImmutableIdentityException(typeof(Level)); }
 
 		public void Render(CanvasDrawingSession sender) {
-			for(int x = (int)Math.Floor(Database.Camera.X - 1); x < Math.Ceiling(Database.Camera.X + 1) && x < Width; x++) {
+			for(int x = (int)Math.Floor(Core.Camera.X - 1); x < Math.Ceiling(Core.Camera.X + 1) && x < Width; x++) {
 				if(x < 0)
 					continue;
-				for(int y = (int)Math.Floor(Database.Camera.Y - 1); y < Math.Ceiling(Database.Camera.Y + 1) && y < Height; y++) {
+				for(int y = (int)Math.Floor(Core.Camera.Y - 1); y < Math.Ceiling(Core.Camera.Y + 1) && y < Height; y++) {
 					if(y < 0)
 						continue;
 					//TODO
@@ -153,7 +166,7 @@ namespace Platformer.Geometry {
 			for(int x = 0; x < width; x++){
 				grid[x] = new Tile[height];
 				for(int y = 0; y < height; y++)
-					grid[x][y] = Database.GetTile(p, (byte)stream.ReadByte());
+					grid[x][y] = Core.GetTile(p, (byte)stream.ReadByte());
 			}	
 			return new TileGrid(grid, p);
 		}

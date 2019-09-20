@@ -8,6 +8,8 @@ using Windows.UI.Core;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
 
+using Platformer.Error;
+
 namespace Platformer {
 
 	public sealed partial class MainPage : Page {
@@ -32,7 +34,7 @@ namespace Platformer.Input {
 			friction;
 
 		static Logic() {
-			Data.IO.DataMap dat = new Data.IO.DataMap(Database.MainPackage,new Data.IO.AppDataFile(@"asset\testcontrols.dat"));
+			Data.IO.DataMap dat = new Data.IO.DataMap(Core.MainPackage,new Data.IO.AppDataFile(@"asset\testcontrols.dat"));
 			movemodifier = (float)dat["movement"].Data;
 			jumparcmodifier = (float)dat["forcejumpx"].Data;
 			gravity = (float)dat["gravity"].Data;
@@ -41,37 +43,37 @@ namespace Platformer.Input {
 		}
 
 		public static void Flow() {
-			float floorpos = MainPage.floor - (float)Database.Player.Height;
-			bool grounded = Database.Player.Y >= floorpos;
+			float floorpos = MainPage.floor - (float)Core.Player.Height;
+			bool grounded = Core.Player.Y >= floorpos;
 			if(grounded){
-				Database.Player.Velocity.Y = 0;
-				Database.Player.Velocity.X += HorizontalInput() * movemodifier;
-			} else if(Database.Player.Y + Database.Player.Velocity.Y > floorpos)
-				Database.Player.Velocity.Y = floorpos - (float)Database.Player.Y;
+				Core.Player.Velocity.Y = 0;
+				Core.Player.Velocity.X += HorizontalInput() * movemodifier;
+			} else if(Core.Player.Y + Core.Player.Velocity.Y > floorpos)
+				Core.Player.Velocity.Y = floorpos - (float)Core.Player.Y;
 			else
-				Database.Player.Velocity.Y += gravity;
+				Core.Player.Velocity.Y += gravity;
 			if(JumpInput() && grounded){
-				Database.Player.Velocity.Y -= jumpforce;//make 30?
+				Core.Player.Velocity.Y -= jumpforce;//make 30?
 				/*if(Key[VirtualKey.Shift])
 					Database.player.Velocity.Y *= 1.25f;*/
-				Database.Player.Velocity.X += HorizontalInput() * jumparcmodifier;
+				Core.Player.Velocity.X += HorizontalInput() * jumparcmodifier;
 			}
-			Database.Player.DoVelocity();
+			Core.Player.DoVelocity();
 			if(grounded) {
-				Database.Player.Velocity.X *= friction;
+				Core.Player.Velocity.X *= friction;
 				if(HorizontalInput() != 0)
 					if(System.Math.Abs(HorizontalInput()) > 1)
-						Database.Player.State = 2;
+						Core.Player.State = 2;
 					else
-						Database.Player.State = 1;
+						Core.Player.State = 1;
 				else
-					Database.Player.State = 0;
+					Core.Player.State = 0;
 			} else
-				Database.Player.State = 3;
-			if(Database.Player.Velocity.X > 0)
-			Database.Player.Facing = false;
-			if(Database.Player.Velocity.X < 0)
-			Database.Player.Facing = true;
+				Core.Player.State = 3;
+			if(Core.Player.Velocity.X > 0)
+			Core.Player.Facing = false;
+			if(Core.Player.Velocity.X < 0)
+			Core.Player.Facing = true;
 		}
 
 
@@ -152,7 +154,10 @@ using Object;
 
 		public abstract void Query();
 		public abstract void Move();
+
 		public abstract IdentityNumber GetID();
+		public abstract void SetID(IdentityNumber newIdentity);
+
 	}
 
 	public class LinearBehavior : Behavior {
@@ -167,6 +172,7 @@ using Object;
 			
 		}
 		public override IdentityNumber GetID() { return Target.Identity; }
+		public override void SetID(IdentityNumber newIdentity) { throw new ImmutableIdentityException(typeof(LinearBehavior)); }
 
 	}
 

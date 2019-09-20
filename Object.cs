@@ -4,17 +4,22 @@ using Microsoft.Graphics.Canvas;
 using Windows.Foundation;
 
 using Platformer.Data;
+using Platformer.Data.IO;
+using Platformer.Data.Struct;
+using Platformer.Error;
 using Platformer.Geometry;
 using Platformer.Render;
 
 namespace Platformer.Object {
-using Data.IO;
 
-	/// <summary>
-	/// Outlines an entity in the game.
-	/// </summary>
-	public abstract class Entity : Identifiable {
-		public readonly IdentityNumber Identity;
+    /// <summary>
+    /// Outlines an entity in the game.
+    /// </summary>
+    public abstract class Entity : Identifiable {
+		public IdentityNumber Identity {
+			get;
+			internal set;
+		}
 		public Vector2 Velocity;
 		protected BoundingBox boundingbox;
 		public Coordinate Position {
@@ -38,6 +43,7 @@ using Data.IO;
 		public void DoVelocity() { Position += Velocity; }
 
 		public IdentityNumber GetID() { return Identity; }
+		public void SetID(IdentityNumber newIdentity) { Identity = newIdentity; }
 
 		public abstract void Render(CanvasDrawingSession session);
 
@@ -80,8 +86,10 @@ using Data.IO;
 		public Direction GetFacing() { return _dir ? Direction.LEFT : Direction.RIGHT; }
 
 		public override void Render(CanvasDrawingSession session) { session.DrawImage(sprites, boundingbox); }
+		new public void SetID(IdentityNumber newIdentity) { throw new ImmutableIdentityException(typeof(Player)); }
 
 		public static Player FromDataMap(DataMap map) {
+			DataMap.CheckForSet(map, "bounds", "sprites");
 			Player output = new Player();
 			output.boundingbox = (BoundingBox)map["bounds"].Data;
 			output.sprites = (SpriteSheet)map["sprites"].Data;
