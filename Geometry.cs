@@ -21,6 +21,8 @@ namespace Platformer.Geometry {
 			Y = y;
 		}
 
+		public RenderCoordinate InScreenSpace() { return new RenderCoordinate(this); }
+
 		public static Coordinate operator +(Coordinate a, Coordinate b) { return new Coordinate(a.X + b.X, a.Y + b.Y); }
 		public static Coordinate operator +(Coordinate a, (double,double) b) { return new Coordinate(a.X + b.Item1, a.Y + b.Item2); }
 		public static Coordinate operator +(Coordinate a, Vector2 b) { return new Coordinate(a.X + b.X, a.Y + b.Y); }
@@ -29,6 +31,24 @@ namespace Platformer.Geometry {
 		public static Coordinate operator -(Coordinate a, Vector2 b) { return new Coordinate(a.X - b.X, a.Y - b.Y); }
 
 		public static implicit operator Point(Coordinate c) { return new Point(c.X, c.Y); }
+
+	}
+
+	public struct RenderCoordinate {
+		public double X, Y;
+
+		public RenderCoordinate(Coordinate c) {
+			X = c.X * (16 * Core.RenderScale) - Core.Camera.X;
+			Y = c.Y * (16 * Core.RenderScale) - Core.Camera.Y;
+		}
+		public RenderCoordinate(double x, double y) {
+			X = x;
+			Y = y;
+		}
+
+		public Coordinate InAbsoluteSpace() { return new Coordinate(X / (16 * Core.RenderScale) + Core.Camera.X, Y / (16 * Core.RenderScale) + Core.Camera.Y); }
+
+		public static implicit operator Coordinate(RenderCoordinate c) { return c.InAbsoluteSpace(); }
 
 	}
 
@@ -42,10 +62,14 @@ namespace Platformer.Geometry {
 				Height = h;
 			}
 			public BoundingBox(Coordinate o, double w, double h) : this(o.X, o.Y, w, h) { }
-			public BoundingBox(Coordinate o, Vector2 s) : this(o.X, o.Y, s.X, s.Y) { }
+			public BoundingBox(Coordinate o, Vector s) : this(o.X, o.Y, s.X, s.Y) { }
 
 			public bool Contains(Coordinate p) {
 				return ((p.X > X) && (p.X < (X + Width))) && ((p.Y > Y) && (p.Y < (Y + Height)));
+			}
+
+			public BoundingBox InScreenSpace() {
+				return new BoundingBox(new Coordinate(X, Y).InScreenSpace(), Width * (16 * Core.RenderScale), Height * (16 * Core.RenderScale));
 			}
 
 			public static BoundingBox operator +(BoundingBox b, Vector2 t) { return new BoundingBox(b.X + t.X, b.Y + t.Y, b.Width, b.Height); }
@@ -54,6 +78,25 @@ namespace Platformer.Geometry {
 			public static BoundingBox operator *(BoundingBox b, Vector2 m) { return new BoundingBox(b.X, b.Y, b.Width * m.X, b.Height * m.Y); }
 
 			public static implicit operator Rect(BoundingBox b) { return new Rect(b.X, b.Y, b.Width, b.Height); }
+
+	}
+
+	public struct Vector {
+		public double X, Y;
+
+		public Vector(double x, double y) {
+			X = x;
+			Y = y;
+		}
+
+		public static Vector operator +(Vector a, Vector b) { return new Vector(a.X + b.X, a.Y + b.Y); }
+		public static Vector operator -(Vector a, Vector b) { return new Vector(a.X - b.X, a.Y - b.Y); }
+		public static Vector operator *(Vector a, double b) { return new Vector(a.X * b, a.Y * b); }
+		public static Vector operator *(Vector a, float b) { return new Vector(a.X * b, a.Y * b); }
+		public static Vector operator *(Vector a, Vector b) { return new Vector(a.X * b.X, a.Y * b.Y); }
+		public static Vector operator /(Vector a, double b) { return new Vector(a.X / b, a.Y / b); }
+
+		public static implicit operator Vector2(Vector v) { return new Vector2((float)v.X, (float)v.Y); }
 
 	}
 
@@ -86,6 +129,8 @@ namespace Platformer.Geometry {
 			Behavior = behavior;
 		}
 
+		public void Render(CanvasDrawingSession session, Coordinate pos) { System.Diagnostics.Debug.WriteLine(imgref.ToString()); session.DrawImage(imgref.ToTexture(), new BoundingBox(pos, new Vector(16, 16) * Core.RenderScale)); }
+
 		public ShortIdentity GetID() { return Identity; }
 		internal void SetID(ShortIdentity newIdentity) { Identity = newIdentity; }
 
@@ -113,6 +158,9 @@ namespace Platformer.Geometry {
 		public Level() {
 			grid = new TileGrid();
 		}
+		public Level(Package pack, AppDataFile path) {
+			grid = TileGrid.FromFile(path, pack);
+		}
 
 		public Tile this[ushort x, ushort y] {
 			get { return grid[x,y]; }
@@ -122,14 +170,13 @@ namespace Platformer.Geometry {
 		public void SetID(IdentityNumber newIdentity) { throw new ImmutableIdentityException(typeof(Level)); }
 
 		public void Render(CanvasDrawingSession sender) {
-			for(int x = (int)Math.Floor(Core.Camera.X - 1); x < Math.Ceiling(Core.Camera.X + 1) && x < Width; x++) {
+			for(int x = (int)Math.Floor(Core.Camera.X - 1); /*x < Math.Ceiling(campos.X + 1) &&*/ x < Width; x++) {
 				if(x < 0)
 					continue;
-				for(int y = (int)Math.Floor(Core.Camera.Y - 1); y < Math.Ceiling(Core.Camera.Y + 1) && y < Height; y++) {
+				for(int y = (int)Math.Floor(Core.Camera.Y - 1); /*y < Math.Ceiling(campos.Y + 1) &&*/ y < Height; y++) {
 					if(y < 0)
 						continue;
-					//TODO
-					sender.DrawImage((CanvasBitmap)grid[(ushort)x,(ushort)y]);
+					grid[(ushort)x,(ushort) y].Render(sender, new Coordinate(x, y));//.InScreenSpace());
 				}
 			}
 		}

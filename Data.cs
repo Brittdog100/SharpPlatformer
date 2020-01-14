@@ -80,7 +80,9 @@ using Data.Struct;
 
 		private async static Task CreateCoreTextures(ICanvasAnimatedControl sender) {
 			WriteLine("starting texture prep");
+			WriteLine("ground");
 			await ResourceManager.LoadTexture(sender, Core.MainPackage, @"asset\texture\default\ground.png", "ground");
+			WriteLine("grass");
 			await ResourceManager.LoadTexture(sender, Core.MainPackage, @"asset\texture\default\grass.png", "grass");
 			WriteLine("finished texture prep");
 		}
@@ -88,8 +90,8 @@ using Data.Struct;
 		private static void CreateCoreTiles() {
 			WriteLine("starting tile creation");
 			//Tile order is important, since the order they are declared affects their index in tileset binaries.
-			Core.AddTile(Core.MainPackage, Geometry.Tile.FromDataMap(new Data.IO.DataMap(Core.MainPackage, new Data.IO.AppDataFile(@"asset\tile\default\ground.dat"))));
-			Core.AddTile(Core.MainPackage, Geometry.Tile.FromDataMap(new Data.IO.DataMap(Core.MainPackage, new Data.IO.AppDataFile(@"asset\tile\default\grass.dat"))));
+			Core.AddTile(Core.MainPackage, Geometry.Tile.FromDataMap(new Data.IO.DataMap(Core.MainPackage, new Data.IO.AppDataFile(@"asset\texture\default\ground.dat"))));
+			Core.AddTile(Core.MainPackage, Geometry.Tile.FromDataMap(new Data.IO.DataMap(Core.MainPackage, new Data.IO.AppDataFile(@"asset\texture\default\grass.dat"))));
 			WriteLine("finished tile creation");
 		}
 
@@ -99,7 +101,8 @@ using Data.Struct;
 			 *	the Package struct somehow. I might accomplish this by adding a definition for the player
 			 *	object's DataMap into the package definition, but I'm still not particularly sure for now.
 			 */
-			Core.Player = new Object.Player(new Render.SpriteSheet(new Data.IO.DataMap(Core.MainPackage, new Data.IO.AppDataFile(@"asset\sprite\testplayer.ssf"))));
+			Core.Player = Object.Player.FromDataMap(new Data.IO.DataMap(Core.MainPackage, new Data.IO.AppDataFile(@"asset\entity\testPlayer.edf")));
+			Core.Level = new Geometry.Level(Core.MainPackage, new Data.IO.AppDataFile(@"asset\level\level0.bin"));
 		}
 
 	}
@@ -455,6 +458,7 @@ namespace Platformer.Data {
 			else return null;
 		}
 		public static async Task<Render.Texture> LoadTexture(ICanvasAnimatedControl sender, Struct.Package pack, string path, string key) {
+			WriteLine(path + " ; " + AppDataPath(path));
 			var img = await CanvasBitmap.LoadAsync(sender, AppDataPath(path));
 			var output = new Render.Texture(img);
 			if(Core.AddTexture(pack, key, output))

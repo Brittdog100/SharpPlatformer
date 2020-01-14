@@ -38,6 +38,7 @@ using Geometry;
 			//TODO: rendering code here
 			Input.Logic.Flow();
 			Core.Player.Render(args.DrawingSession);
+			Core.Level.Render(args.DrawingSession);
 			args.DrawingSession.DrawLine(new Vector2(0,floor),new Vector2(10000,floor),Color.FromArgb(255,0,0,0));
 		}
 
@@ -51,7 +52,7 @@ using Geometry;
 		private static Bundle<Sprite>[] sprites = new Bundle<Sprite>[0x100];
 		private static Bundle<Texture>[] textures = new Bundle<Texture>[0x100];
 		internal static Coordinate Camera = new Coordinate(0, 0);
-		public static float RenderScale = 2.0f;
+		public static float RenderScale = 1.0f;
 
 		/// <summary>
 		/// Registers a sprite.
@@ -335,7 +336,7 @@ using Data.IO;
 		}
 
 		public Texture ToTexture() { return Core.GetTexture(Package, Key); }
-		new public string ToString() { return (Package.Identifier + ":" + Key); }
+		public override string ToString() { return (Package.Identifier + ":" + Key); }
 
 	}
 

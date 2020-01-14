@@ -43,13 +43,14 @@ namespace Platformer.Input {
 		}
 
 		public static void Flow() {
-			float floorpos = MainPage.floor - (float)Core.Player.Height;
-			bool grounded = Core.Player.Y >= floorpos;
+			Geometry.RenderCoordinate pos = Core.Player.Position.InScreenSpace();
+			float floorpos = MainPage.floor - ((float)Core.Player.Height * 16 * Core.RenderScale);
+			bool grounded = pos.Y >= floorpos;
 			if(grounded){
 				Core.Player.Velocity.Y = 0;
 				Core.Player.Velocity.X += HorizontalInput() * movemodifier;
-			} else if(Core.Player.Y + Core.Player.Velocity.Y > floorpos)
-				Core.Player.Velocity.Y = floorpos - (float)Core.Player.Y;
+			} else if(pos.Y + Core.Player.Velocity.Y > floorpos)
+				Core.Player.Velocity.Y = floorpos - (float)pos.Y;
 			else
 				Core.Player.Velocity.Y += gravity;
 			if(JumpInput() && grounded){

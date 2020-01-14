@@ -144,7 +144,7 @@ namespace Platformer.Error {
 		private static string ErrorMessage(string[] p) {
 			string tmp = "";
 			foreach(string s in p)
-				tmp += " " + p;
+				tmp += " " + s;
 			return ("DataMap is missing the following properties:" + tmp);
 		}
 

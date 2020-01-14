@@ -1,5 +1,4 @@
-﻿using System.Numerics;
-
+﻿
 using Microsoft.Graphics.Canvas;
 using Windows.Foundation;
 
@@ -20,7 +19,7 @@ namespace Platformer.Object {
 			get;
 			internal set;
 		}
-		public Vector2 Velocity;
+		public Vector Velocity;
 		protected BoundingBox boundingbox;
 		public Coordinate Position {
 			get { return new Coordinate(boundingbox.X, boundingbox.Y); }
@@ -85,7 +84,7 @@ namespace Platformer.Object {
 
 		public Direction GetFacing() { return _dir ? Direction.LEFT : Direction.RIGHT; }
 
-		public override void Render(CanvasDrawingSession session) { session.DrawImage(sprites, boundingbox); }
+		public override void Render(CanvasDrawingSession session) { session.DrawImage(sprites, boundingbox.InScreenSpace()); }
 		new public void SetID(IdentityNumber newIdentity) { throw new ImmutableIdentityException(typeof(Player)); }
 
 		public static Player FromDataMap(DataMap map) {

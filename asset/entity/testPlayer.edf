@@ -1,3 +1,3 @@
 ﻿bool isplayer true
-sheet sprite asset\sprite\testPlayer.ssf
-rect bounds 32,48
+sheet sprites asset\sprite\testPlayer.ssf
+rect bounds 2,3
