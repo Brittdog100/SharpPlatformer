@@ -90,17 +90,12 @@ using Data.Struct;
 		private static void CreateCoreTiles() {
 			WriteLine("starting tile creation");
 			//Tile order is important, since the order they are declared affects their index in tileset binaries.
-			Core.AddTile(Core.MainPackage, Geometry.Tile.FromDataMap(new Data.IO.DataMap(Core.MainPackage, new Data.IO.AppDataFile(@"asset\texture\default\ground.dat"))));
-			Core.AddTile(Core.MainPackage, Geometry.Tile.FromDataMap(new Data.IO.DataMap(Core.MainPackage, new Data.IO.AppDataFile(@"asset\texture\default\grass.dat"))));
+			Core.AddTile(Core.MainPackage, Geometry.Tile.FromDataMap(new Data.IO.DataMap(Core.MainPackage, new Data.IO.AppDataFile(@"asset\tile\default\ground.dat"))));
+			Core.AddTile(Core.MainPackage, Geometry.Tile.FromDataMap(new Data.IO.DataMap(Core.MainPackage, new Data.IO.AppDataFile(@"asset\tile\default\grass.dat"))));
 			WriteLine("finished tile creation");
 		}
 
 		public static void PreparePlayer() {
-			//TODO
-			/**	This is going to be a little odd, but I'm going to move the burden of loading the player onto
-			 *	the Package struct somehow. I might accomplish this by adding a definition for the player
-			 *	object's DataMap into the package definition, but I'm still not particularly sure for now.
-			 */
 			Core.Player = Object.Player.FromDataMap(new Data.IO.DataMap(Core.MainPackage, new Data.IO.AppDataFile(@"asset\entity\testPlayer.edf")));
 			Core.Level = new Geometry.Level(Core.MainPackage, new Data.IO.AppDataFile(@"asset\level\level0.bin"));
 		}

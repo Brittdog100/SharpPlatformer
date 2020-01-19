@@ -21,7 +21,7 @@ namespace Platformer.Geometry {
 			Y = y;
 		}
 
-		public RenderCoordinate InScreenSpace() { return new RenderCoordinate(this); }
+		public (double,double) InScreenSpace() { return (X - Core.Camera.X, Y - Core.Camera.Y); }
 
 		public static Coordinate operator +(Coordinate a, Coordinate b) { return new Coordinate(a.X + b.X, a.Y + b.Y); }
 		public static Coordinate operator +(Coordinate a, (double,double) b) { return new Coordinate(a.X + b.Item1, a.Y + b.Item2); }
@@ -34,24 +34,6 @@ namespace Platformer.Geometry {
 
 	}
 
-	public struct RenderCoordinate {
-		public double X, Y;
-
-		public RenderCoordinate(Coordinate c) {
-			X = c.X * (16 * Core.RenderScale) - Core.Camera.X;
-			Y = c.Y * (16 * Core.RenderScale) - Core.Camera.Y;
-		}
-		public RenderCoordinate(double x, double y) {
-			X = x;
-			Y = y;
-		}
-
-		public Coordinate InAbsoluteSpace() { return new Coordinate(X / (16 * Core.RenderScale) + Core.Camera.X, Y / (16 * Core.RenderScale) + Core.Camera.Y); }
-
-		public static implicit operator Coordinate(RenderCoordinate c) { return c.InAbsoluteSpace(); }
-
-	}
-
 	public struct BoundingBox {
 		public double X, Y, Width, Height;
 
@@ -61,6 +43,7 @@ namespace Platformer.Geometry {
 				Width = w;
 				Height = h;
 			}
+			public BoundingBox((double,double) xy, double w, double h) : this(xy.Item1, xy.Item2, w, h) { }
 			public BoundingBox(Coordinate o, double w, double h) : this(o.X, o.Y, w, h) { }
 			public BoundingBox(Coordinate o, Vector s) : this(o.X, o.Y, s.X, s.Y) { }
 
